@@ -3,8 +3,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { MapPin, UtensilsCrossed } from "lucide-react";
+import { useLocation } from "@/context/LocationContext";
 
 export default function Navbar() {
+  const { locationLabel } = useLocation();
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-homatri-border shadow-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
@@ -21,7 +23,7 @@ export default function Navbar() {
             />
           </div>
           <div>
-            <span className="font-display font-bold text-2xl text-homatri-orange tracking-tight block leading-none">
+            <span className="font-display italic font-medium text-2xl text-homatri-orange block leading-none">
               Homatri
             </span>
             <span className="text-[11px] font-medium text-homatri-muted block mt-1 tracking-wide">
@@ -33,7 +35,7 @@ export default function Navbar() {
         {/* Location Selector Indicator */}
         <div className="hidden md:flex items-center gap-2 bg-homatri-cream border border-homatri-border px-3 py-1.5 rounded-full text-xs font-medium text-homatri-dark">
           <MapPin className="w-3.5 h-3.5 text-homatri-orange" />
-          <span>Active Cluster: <strong className="text-homatri-dark font-semibold">Ghansoli, Navi Mumbai</strong></span>
+          <span>Active Cluster: <strong className="text-homatri-dark font-semibold">{locationLabel}</strong></span>
         </div>
 
         {/* Navigation Links & Action Button */}

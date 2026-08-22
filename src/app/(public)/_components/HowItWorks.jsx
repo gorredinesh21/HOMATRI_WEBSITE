@@ -11,7 +11,7 @@ export default function HowItWorks() {
           <span className="text-xs font-semibold text-homatri-orange tracking-wider uppercase bg-homatri-orange-light px-3.5 py-1 rounded-full">
             Simple 3-Step Routine
           </span>
-          <h2 className="font-display mt-4 text-3xl sm:text-4xl font-bold text-homatri-dark tracking-tight leading-snug">
+          <h2 className="font-display mt-4 text-3xl sm:text-4xl font-medium text-homatri-dark leading-snug">
             How Homaatri Works For You
           </h2>
           <p className="mt-3 text-base text-homatri-muted font-normal leading-relaxed">
@@ -27,7 +27,7 @@ export default function HowItWorks() {
               1
             </div>
             <Search className="w-7 h-7 text-homatri-orange mx-auto mb-4" />
-            <h3 className="font-display text-lg font-bold text-homatri-dark mb-2">
+            <h3 className="font-display text-lg font-medium text-homatri-dark mb-2">
               Discover Local Homemakers
             </h3>
             <p className="text-sm text-homatri-muted leading-relaxed font-normal">
@@ -41,7 +41,7 @@ export default function HowItWorks() {
               2
             </div>
             <CalendarCheck className="w-7 h-7 text-homatri-orange mx-auto mb-4" />
-            <h3 className="font-display text-lg font-bold text-homatri-dark mb-2">
+            <h3 className="font-display text-lg font-medium text-homatri-dark mb-2">
               Pick Your Meal Window
             </h3>
             <p className="text-sm text-homatri-muted leading-relaxed font-normal">
@@ -55,7 +55,7 @@ export default function HowItWorks() {
               3
             </div>
             <Bike className="w-7 h-7 text-homatri-orange mx-auto mb-4" />
-            <h3 className="font-display text-lg font-bold text-homatri-dark mb-2">
+            <h3 className="font-display text-lg font-medium text-homatri-dark mb-2">
               Enjoy Scheduled Delivery
             </h3>
             <p className="text-sm text-homatri-muted leading-relaxed font-normal">

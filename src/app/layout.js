@@ -1,19 +1,21 @@
-import { Plus_Jakarta_Sans, Outfit } from "next/font/google";
+import { Figtree, Fraunces } from "next/font/google";
 import { LocationProvider } from "@/context/LocationContext";
 import { CartProvider } from "@/context/CartContext";
 import { AuthProvider } from "@/context/AuthContext";
+import GlobalOverlays from "@/components/GlobalOverlays";
 import "./globals.css";
 
-const plusJakartaSans = Plus_Jakarta_Sans({
+const figtree = Figtree({
   subsets: ["latin"],
-  variable: "--font-plus-jakarta-sans",
+  variable: "--font-figtree",
   display: "swap",
 });
 
-const outfit = Outfit({
+const fraunces = Fraunces({
   subsets: ["latin"],
-  variable: "--font-outfit",
+  variable: "--font-fraunces",
   display: "swap",
+  axes: ["SOFT", "WONK", "opsz"],
 });
 
 export const metadata = {
@@ -24,12 +26,13 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={`${plusJakartaSans.variable} ${outfit.variable} scroll-smooth`}>
+    <html lang="en" className={`${figtree.variable} ${fraunces.variable} scroll-smooth`}>
       <body className="font-sans">
         <AuthProvider>
           <LocationProvider>
             <CartProvider>
               {children}
+              <GlobalOverlays />
             </CartProvider>
           </LocationProvider>
         </AuthProvider>

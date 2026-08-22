@@ -3,8 +3,22 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    @apply antialiased;
+  }
+
   body {
-    @apply bg-homatri-cream text-homatri-dark antialiased selection:bg-homatri-orange-light selection:text-homatri-orange;
+    @apply bg-homatri-cream text-homatri-dark font-sans;
+    letter-spacing: 0.01em;
+    line-height: 1.65;
+    font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+  }
+
+  .font-display {
+    letter-spacing: -0.018em;
+    line-height: 1.15;
+    font-optical-sizing: auto;
+    font-variation-settings: "SOFT" 70, "WONK" 0.65, "opsz" 72;
   }
 }
 

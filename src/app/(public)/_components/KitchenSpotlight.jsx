@@ -73,7 +73,7 @@ export default function KitchenSpotlight() {
             <span className="text-xs font-semibold text-homatri-orange tracking-wider uppercase bg-white border border-homatri-orange/20 px-3.5 py-1 rounded-full shadow-xs">
               Local Home Kitchens
             </span>
-            <h2 className="font-display mt-3 text-3xl sm:text-4xl font-bold text-homatri-dark tracking-tight leading-snug">
+            <h2 className="font-display mt-3 text-3xl sm:text-4xl font-medium text-homatri-dark leading-snug">
               Featured Homemakers In Ghansoli
             </h2>
             <p className="mt-1 text-sm text-homatri-muted font-normal">
@@ -111,7 +111,7 @@ export default function KitchenSpotlight() {
                 </div>
 
                 {/* Kitchen Name & Chef */}
-                <h3 className="font-display text-base font-bold text-homatri-dark leading-snug">
+                <h3 className="font-display text-xl font-medium text-homatri-dark leading-snug">
                   {k.name}
                 </h3>
                 <p className="text-xs font-semibold text-homatri-orange mt-0.5">

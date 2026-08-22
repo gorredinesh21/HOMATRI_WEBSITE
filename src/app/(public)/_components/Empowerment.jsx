@@ -13,7 +13,7 @@ export default function Empowerment() {
             <span>The Homemaker Movement</span>
           </div>
           
-          <h2 className="font-display text-3xl sm:text-4xl font-bold text-homatri-dark tracking-tight leading-snug">
+          <h2 className="font-display text-3xl sm:text-4xl font-medium text-homatri-dark leading-snug">
             Empowering Homemakers. <br />
             <span className="text-homatri-orange">Your Kitchen, Your Business.</span>
           </h2>
@@ -30,7 +30,7 @@ export default function Empowerment() {
             <div className="w-12 h-12 rounded-2xl bg-homatri-orange-light text-homatri-orange flex items-center justify-center font-bold mb-6">
               <Users className="w-6 h-6" />
             </div>
-            <h3 className="font-display text-lg font-bold text-homatri-dark mb-2">
+            <h3 className="font-display text-lg font-medium text-homatri-dark mb-2">
               Recognized Food Identity
             </h3>
             <p className="text-sm text-homatri-muted leading-relaxed font-normal">
@@ -42,7 +42,7 @@ export default function Empowerment() {
             <div className="w-12 h-12 rounded-2xl bg-homatri-green-light text-homatri-green flex items-center justify-center font-bold mb-6">
               <ShieldCheck className="w-6 h-6" />
             </div>
-            <h3 className="font-display text-lg font-bold text-homatri-dark mb-2">
+            <h3 className="font-display text-lg font-medium text-homatri-dark mb-2">
               Zero Operational Friction
             </h3>
             <p className="text-sm text-homatri-muted leading-relaxed font-normal">
@@ -54,7 +54,7 @@ export default function Empowerment() {
             <div className="w-12 h-12 rounded-2xl bg-homatri-orange-light text-homatri-orange flex items-center justify-center font-bold mb-6">
               <Heart className="w-6 h-6" />
             </div>
-            <h3 className="font-display text-lg font-bold text-homatri-dark mb-2">
+            <h3 className="font-display text-lg font-medium text-homatri-dark mb-2">
               Pride & Financial Independence
             </h3>
             <p className="text-sm text-homatri-muted leading-relaxed font-normal">

@@ -19,9 +19,9 @@ export default function TrustBanner() {
               <span>100% Quality & Hygiene Standard</span>
             </span>
 
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight">
+            <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-medium leading-tight">
               Home Food You Can Trust, <br />
-              <span className="text-homatri-orange">Every Single Day.</span>
+              <span className="text-homatri-orange italic font-normal">Every Single Day.</span>
             </h2>
 
             <p className="mt-4 text-base sm:text-lg text-slate-300 leading-relaxed font-normal">

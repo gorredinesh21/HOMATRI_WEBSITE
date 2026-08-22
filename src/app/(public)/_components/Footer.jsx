@@ -17,11 +17,11 @@ export default function Footer() {
               <div className="relative w-10 h-10 rounded-xl overflow-hidden shadow-sm">
                 <Image src="/logo.jpg" alt="Homaatri Logo" fill className="object-cover" />
               </div>
-              <span className="font-extrabold text-2xl text-homatri-orange tracking-tight">
+              <span className="font-display italic font-medium text-2xl text-homatri-orange">
                 Homatri
               </span>
             </Link>
-            <p className="text-sm font-semibold text-homatri-dark">
+            <p className="font-display italic text-lg text-homatri-dark">
               Achha Khao. Ghar Ka Khao.
             </p>
             <p className="text-xs text-homatri-muted leading-relaxed max-w-sm">
@@ -75,6 +75,8 @@ export default function Footer() {
                 <Link href="/order" className="hover:underline">Customer Ordering</Link>
                 <span>•</span>
                 <Link href="/chef" className="hover:underline">Chef Portal</Link>
+                <span>•</span>
+                <Link href="/rider" className="hover:underline">Rider Portal</Link>
                 <span>•</span>
                 <Link href="/admin" className="hover:underline">Admin Portal</Link>
               </div>

@@ -1,11 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Search, ShieldCheck, Clock, Heart, Sparkles } from "lucide-react";
-import Link from "next/link";
+import { useLocation } from "@/context/LocationContext";
 
 export default function Hero() {
-  const [searchArea, setSearchArea] = useState("");
+  const router = useRouter();
+  const { activeCluster, setCluster } = useLocation();
+  const [searchArea, setSearchArea] = useState(activeCluster || "");
+
+  useEffect(() => {
+    if (activeCluster) setSearchArea(activeCluster);
+  }, [activeCluster]);
+
+  const goToOrder = (cluster) => {
+    const next = (cluster || searchArea || "Ghansoli").trim();
+    setCluster(next);
+    router.push(`/order?location=${encodeURIComponent(next)}`);
+  };
 
   return (
     <section className="relative overflow-hidden bg-gradient-to-b from-homatri-orange-light/40 via-homatri-cream to-white py-16 lg:py-24">
@@ -20,15 +33,15 @@ export default function Hero() {
           {/* Badge */}
           <div className="inline-flex items-center gap-2 bg-white border border-homatri-orange/20 px-4 py-1.5 rounded-full shadow-xs mb-6">
             <Sparkles className="w-3.5 h-3.5 text-homatri-orange" />
-            <span className="text-xs font-semibold text-homatri-orange tracking-wider uppercase">
+            <span className="text-[11px] font-medium text-homatri-orange tracking-widest uppercase">
               Managed Home Tiffin Network
             </span>
           </div>
 
           {/* Main Headline */}
-          <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-bold text-homatri-dark tracking-tight leading-[1.15]">
+          <h1 className="font-display text-[2.75rem] sm:text-5xl lg:text-6xl font-medium text-homatri-dark">
             Achha Khao. <br />
-            <span className="text-homatri-orange">Ghar Ka Khao.</span>
+            <span className="text-homatri-orange italic font-normal">Ghar Ka Khao.</span>
           </h1>
 
           {/* Subheadline */}
@@ -48,24 +61,25 @@ export default function Hero() {
                 className="w-full text-sm font-medium focus:outline-none text-homatri-dark placeholder:text-homatri-muted"
               />
             </div>
-            <Link
-              href="/order"
+            <button
+              type="button"
+              onClick={() => goToOrder(searchArea)}
               className="w-full sm:w-auto bg-homatri-orange hover:bg-homatri-orange-dark text-white px-8 py-3.5 rounded-xl font-bold text-sm whitespace-nowrap shadow-sm transition-all text-center"
             >
               Find Menus
-            </Link>
+            </button>
           </div>
 
           {/* Quick Area Chips */}
           <div className="mt-4 flex items-center justify-center gap-2 flex-wrap text-xs text-homatri-muted">
             <span className="font-medium">Popular Clusters:</span>
-            <button onClick={() => setSearchArea("Ghansoli")} className="bg-white hover:bg-homatri-orange-light px-2.5 py-1 rounded-lg border border-homatri-border font-medium transition-colors">
+            <button type="button" onClick={() => { setSearchArea("Ghansoli"); setCluster("Ghansoli"); }} className="bg-white hover:bg-homatri-orange-light px-2.5 py-1 rounded-lg border border-homatri-border font-medium transition-colors">
               📍 Ghansoli
             </button>
-            <button onClick={() => setSearchArea("Vashi")} className="bg-white hover:bg-homatri-orange-light px-2.5 py-1 rounded-lg border border-homatri-border font-medium transition-colors">
+            <button type="button" onClick={() => { setSearchArea("Vashi"); setCluster("Vashi"); }} className="bg-white hover:bg-homatri-orange-light px-2.5 py-1 rounded-lg border border-homatri-border font-medium transition-colors">
               📍 Vashi
             </button>
-            <button onClick={() => setSearchArea("Airoli")} className="bg-white hover:bg-homatri-orange-light px-2.5 py-1 rounded-lg border border-homatri-border font-medium transition-colors">
+            <button type="button" onClick={() => { setSearchArea("Airoli"); setCluster("Airoli"); }} className="bg-white hover:bg-homatri-orange-light px-2.5 py-1 rounded-lg border border-homatri-border font-medium transition-colors">
               📍 Airoli
             </button>
           </div>

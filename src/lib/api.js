@@ -1,0 +1,111 @@
+export const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
+  "https://homatri-backend-195132182954.us-central1.run.app";
+
+export const DELIVERY_FEE_DISPLAY = 30;
+
+async function parseJsonSafe(response) {
+  const text = await response.text();
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { raw: text };
+  }
+}
+
+export async function apiRequest(path, { method = "GET", token, body, headers } = {}) {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method,
+    headers: {
+      Accept: "application/json",
+      ...(body ? { "Content-Type": "application/json" } : {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...headers,
+    },
+    body: body ? JSON.stringify(body) : undefined,
+    cache: "no-store",
+  });
+
+  const data = await parseJsonSafe(response);
+  if (!response.ok) {
+    const message =
+      data?.detail ||
+      data?.message ||
+      data?.error ||
+      `Request failed (${response.status})`;
+    const error = new Error(typeof message === "string" ? message : JSON.stringify(message));
+    error.status = response.status;
+    error.payload = data;
+    throw error;
+  }
+
+  return data;
+}
+
+export function orderStreamUrl(orderId) {
+  return `${API_BASE_URL}/api/v1/orders/${orderId}/stream`;
+}
+
+export async function requestOtp(phone) {
+  return apiRequest("/api/v1/auth/otp/request", {
+    method: "POST",
+    body: { phone },
+  });
+}
+
+export async function verifyOtp({ phone, otp }) {
+  return apiRequest("/api/v1/auth/otp/verify", {
+    method: "POST",
+    body: { phone, otp },
+  });
+}
+
+export async function checkoutOrder(payload, token) {
+  return apiRequest("/api/v1/orders/checkout", {
+    method: "POST",
+    token,
+    body: payload,
+  });
+}
+
+export async function fetchPublicChefs() {
+  return apiRequest("/api/v1/chefs");
+}
+
+export async function fetchPublicReels() {
+  return apiRequest("/api/v1/reels");
+}
+
+export async function fetchOrder(orderId, token) {
+  return apiRequest(`/api/v1/orders/${orderId}`, { token });
+}
+
+export async function uploadChefReel(formData, token) {
+  const response = await fetch(`${API_BASE_URL}/api/v1/reels/upload`, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: formData,
+  });
+  const data = await parseJsonSafe(response);
+  if (!response.ok) {
+    const message =
+      data?.detail || data?.message || data?.error || `Upload failed (${response.status})`;
+    const error = new Error(typeof message === "string" ? message : JSON.stringify(message));
+    error.status = response.status;
+    throw error;
+  }
+  return data;
+}
+
+export function riderLocationWsUrl() {
+  const http = API_BASE_URL.replace(/\/$/, "");
+  const ws = http.startsWith("https://")
+    ? http.replace(/^https:\/\//, "wss://")
+    : http.replace(/^http:\/\//, "ws://");
+  return `${ws}/ws/v1/rider/location`;
+}
+

@@ -22,7 +22,7 @@ export default function Story() {
                       <h4 className="text-xs font-bold text-homatri-orange uppercase tracking-wider">
                         Regional Nostalgia
                       </h4>
-                      <p className="font-display text-sm font-bold text-homatri-dark">
+                      <p className="font-display text-sm font-medium italic text-homatri-dark">
                         "Craving authentic Gongura Pappu from Telangana..."
                       </p>
                     </div>
@@ -40,7 +40,7 @@ export default function Story() {
                       <h4 className="text-xs font-bold text-homatri-green uppercase tracking-wider">
                         Homemaker Heritage
                       </h4>
-                      <p className="font-display text-sm font-bold text-homatri-dark">
+                      <p className="font-display text-sm font-medium italic text-homatri-dark">
                         Authentic Regional Homemakers
                       </p>
                     </div>
@@ -61,7 +61,7 @@ export default function Story() {
               <span>A Home Away From Home</span>
             </div>
 
-            <h2 className="font-display text-3xl sm:text-4xl font-bold text-homatri-dark tracking-tight leading-snug">
+            <h2 className="font-display text-3xl sm:text-4xl font-medium text-homatri-dark leading-snug">
               Authentic Regional Home Food, <br />
               <span className="text-homatri-orange">Cooked Just Like Mom Made.</span>
             </h2>
