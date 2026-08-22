@@ -1,4 +1,17 @@
+import { Plus_Jakarta_Sans, Outfit } from "next/font/google";
 import "./globals.css";
+
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  variable: "--font-plus-jakarta-sans",
+  display: "swap",
+});
+
+const outfit = Outfit({
+  subsets: ["latin"],
+  variable: "--font-outfit",
+  display: "swap",
+});
 
 export const metadata = {
   title: "Homatri — Achha Khao. Ghar Ka Khao.",
@@ -8,8 +21,8 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className="scroll-smooth">
-      <body>
+    <html lang="en" className={`${plusJakartaSans.variable} ${outfit.variable} scroll-smooth`}>
+      <body className="font-sans">
         {children}
       </body>
     </html>

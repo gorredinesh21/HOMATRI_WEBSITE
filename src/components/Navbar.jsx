@@ -2,16 +2,16 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { MapPin, User, UtensilsCrossed } from "lucide-react";
+import { MapPin, UtensilsCrossed } from "lucide-react";
 
 export default function Navbar() {
   return (
-    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-homatri-border shadow-sm">
+    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-homatri-border shadow-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
         
         {/* Brand Logo */}
         <Link href="/" className="flex items-center gap-3 group">
-          <div className="relative w-12 h-12 rounded-xl overflow-hidden shadow-md group-hover:scale-105 transition-transform">
+          <div className="relative w-11 h-11 rounded-xl overflow-hidden shadow-sm group-hover:scale-105 transition-transform">
             <Image
               src="/logo.jpg"
               alt="Homaatri Logo"
@@ -21,10 +21,10 @@ export default function Navbar() {
             />
           </div>
           <div>
-            <span className="font-extrabold text-2xl text-homatri-orange tracking-tight block leading-none">
+            <span className="font-display font-bold text-2xl text-homatri-orange tracking-tight block leading-none">
               Homatri
             </span>
-            <span className="text-[11px] font-semibold text-homatri-muted block mt-1">
+            <span className="text-[11px] font-medium text-homatri-muted block mt-1 tracking-wide">
               Achha Khao. Ghar Ka Khao.
             </span>
           </div>
@@ -32,8 +32,8 @@ export default function Navbar() {
 
         {/* Location Selector Indicator */}
         <div className="hidden md:flex items-center gap-2 bg-homatri-cream border border-homatri-border px-3 py-1.5 rounded-full text-xs font-medium text-homatri-dark">
-          <MapPin className="w-4 h-4 text-homatri-orange" />
-          <span>Active Cluster: <strong className="text-homatri-dark">Ghansoli, Navi Mumbai</strong></span>
+          <MapPin className="w-3.5 h-3.5 text-homatri-orange" />
+          <span>Active Cluster: <strong className="text-homatri-dark font-semibold">Ghansoli, Navi Mumbai</strong></span>
         </div>
 
         {/* Navigation Links & Action Button */}
@@ -56,7 +56,7 @@ export default function Navbar() {
           {/* Primary Action Button */}
           <Link
             href="/order"
-            className="flex items-center gap-2 bg-homatri-orange hover:bg-homatri-orange-dark text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-md hover:shadow-lg transition-all"
+            className="flex items-center gap-2 bg-homatri-orange hover:bg-homatri-orange-dark text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-sm hover:shadow transition-all"
           >
             <UtensilsCrossed className="w-4 h-4" />
             <span>Explore Menus</span>

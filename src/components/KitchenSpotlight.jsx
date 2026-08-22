@@ -1,6 +1,6 @@
 "use client";
 
-import { Star, MapPin, ShieldCheck, ChevronRight } from "lucide-react";
+import { Star, MapPin, ChevronRight } from "lucide-react";
 import Link from "next/link";
 
 const FEATURED_KITCHENS = [
@@ -70,20 +70,20 @@ export default function KitchenSpotlight() {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
           <div>
-            <span className="text-xs font-extrabold text-homatri-orange tracking-wider uppercase bg-white border border-homatri-orange/20 px-3.5 py-1 rounded-full shadow-sm">
+            <span className="text-xs font-semibold text-homatri-orange tracking-wider uppercase bg-white border border-homatri-orange/20 px-3.5 py-1 rounded-full shadow-xs">
               Local Home Kitchens
             </span>
-            <h2 className="mt-3 text-3xl sm:text-4xl font-black text-homatri-dark tracking-tight">
+            <h2 className="font-display mt-3 text-3xl sm:text-4xl font-bold text-homatri-dark tracking-tight leading-snug">
               Featured Homemakers In Ghansoli
             </h2>
-            <p className="mt-1 text-sm text-homatri-muted font-medium">
+            <p className="mt-1 text-sm text-homatri-muted font-normal">
               Verified kitchens prepared with authentic regional recipes and fresh ingredients.
             </p>
           </div>
 
           <Link
             href="/order"
-            className="inline-flex items-center gap-1 text-sm font-bold text-homatri-orange hover:text-homatri-orange-dark transition-colors"
+            className="inline-flex items-center gap-1 text-sm font-semibold text-homatri-orange hover:text-homatri-orange-dark transition-colors"
           >
             <span>View All Kitchens</span>
             <ChevronRight className="w-4 h-4" />
@@ -95,13 +95,13 @@ export default function KitchenSpotlight() {
           {FEATURED_KITCHENS.map((k) => (
             <div
               key={k.id}
-              className="bg-white rounded-3xl border border-homatri-border shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col justify-between"
+              className="bg-white rounded-3xl border border-homatri-border shadow-xs hover:shadow transition-all overflow-hidden flex flex-col justify-between"
             >
               <div className="p-6">
                 
                 {/* Top Badges */}
                 <div className="flex items-center justify-between mb-4">
-                  <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${k.dietColor}`}>
+                  <span className={`text-[10px] font-semibold px-2.5 py-1 rounded-full border ${k.dietColor}`}>
                     {k.diet}
                   </span>
                   <div className="flex items-center gap-1 bg-amber-50 text-amber-700 px-2 py-0.5 rounded-md text-xs font-bold">
@@ -111,7 +111,7 @@ export default function KitchenSpotlight() {
                 </div>
 
                 {/* Kitchen Name & Chef */}
-                <h3 className="text-base font-extrabold text-homatri-dark leading-snug">
+                <h3 className="font-display text-base font-bold text-homatri-dark leading-snug">
                   {k.name}
                 </h3>
                 <p className="text-xs font-semibold text-homatri-orange mt-0.5">
@@ -125,7 +125,7 @@ export default function KitchenSpotlight() {
 
                 {/* Signature Dish */}
                 <div className="mt-4 pt-4 border-t border-homatri-border/60">
-                  <span className="text-[11px] font-semibold text-homatri-muted uppercase tracking-wider block">
+                  <span className="text-[11px] font-medium text-homatri-muted uppercase tracking-wider block">
                     Signature Dish:
                   </span>
                   <p className="text-xs font-bold text-homatri-dark mt-0.5">
@@ -134,7 +134,7 @@ export default function KitchenSpotlight() {
                 </div>
 
                 {/* Price Preview */}
-                <div className="mt-4 flex items-center justify-between text-xs font-semibold text-homatri-dark bg-homatri-cream p-2.5 rounded-xl border border-homatri-border">
+                <div className="mt-4 flex items-center justify-between text-xs font-medium text-homatri-dark bg-homatri-cream p-2.5 rounded-xl border border-homatri-border">
                   <span>Lunch: <strong>₹{k.lunchPrice}</strong></span>
                   <span className="text-homatri-border">|</span>
                   <span>Dinner: <strong>₹{k.dinnerPrice}</strong></span>
@@ -146,7 +146,7 @@ export default function KitchenSpotlight() {
               <div className="p-4 bg-homatri-cream/50 border-t border-homatri-border">
                 <Link
                   href="/order"
-                  className="w-full bg-white hover:bg-homatri-orange hover:text-white text-homatri-dark border border-homatri-border font-bold text-xs py-2.5 px-4 rounded-xl flex items-center justify-center gap-1 transition-all text-center shadow-sm"
+                  className="w-full bg-white hover:bg-homatri-orange hover:text-white text-homatri-dark border border-homatri-border font-bold text-xs py-2.5 px-4 rounded-xl flex items-center justify-center gap-1 transition-all text-center shadow-xs"
                 >
                   <span>View Menu & Order</span>
                   <ChevronRight className="w-3.5 h-3.5" />

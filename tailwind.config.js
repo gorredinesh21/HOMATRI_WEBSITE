@@ -7,6 +7,10 @@ module.exports = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ["var(--font-plus-jakarta-sans)", "sans-serif"],
+        display: ["var(--font-outfit)", "sans-serif"],
+      },
       colors: {
         homatri: {
           orange: "#E53A00",
