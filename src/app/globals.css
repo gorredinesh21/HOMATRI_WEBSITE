@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-homatri-cream text-homatri-dark antialiased selection:bg-homatri-orange-light selection:text-homatri-orange;
+  }
+}
+
+.gradient-hero {
+  background: linear-gradient(135deg, #E53A00 0%, #C43200 100%);
+}
+
+.gradient-card {
+  background: linear-gradient(180deg, #FFFFFF 0%, #FBF9F6 100%);
+}
