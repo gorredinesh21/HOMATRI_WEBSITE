@@ -1,4 +1,7 @@
 import { Plus_Jakarta_Sans, Outfit } from "next/font/google";
+import { LocationProvider } from "@/context/LocationContext";
+import { CartProvider } from "@/context/CartContext";
+import { AuthProvider } from "@/context/AuthContext";
 import "./globals.css";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -23,7 +26,13 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${plusJakartaSans.variable} ${outfit.variable} scroll-smooth`}>
       <body className="font-sans">
-        {children}
+        <AuthProvider>
+          <LocationProvider>
+            <CartProvider>
+              {children}
+            </CartProvider>
+          </LocationProvider>
+        </AuthProvider>
       </body>
     </html>
   );
