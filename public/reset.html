@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Resetting Homatri Storage...</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-slate-900 text-white flex items-center justify-center p-4">
+  <div class="text-center space-y-4">
+    <div class="text-5xl animate-spin">🧹</div>
+    <h1 class="text-2xl font-bold">Resetting Browser Storage & Sessions...</h1>
+    <p class="text-xs text-slate-400">Clearing LocalStorage, SessionStorage, and Auth Tokens...</p>
+  </div>
+  <script>
+    try {
+      window.localStorage.clear();
+      window.sessionStorage.clear();
+      document.cookie.split(";").forEach(function(c) {
+        document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+      });
+    } catch(e){}
+    setTimeout(function() {
+      window.location.href = "/order";
+    }, 1200);
+  </script>
+</body>
+</html>
