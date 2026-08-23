@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Homatri — Razorpay Payment Gateway Live Tester</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <style>
+    body { background-color: #FBF9F6; font-family: system-ui, -apple-system, sans-serif; }
+  </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+  <div class="max-w-lg w-full bg-white rounded-3xl p-8 shadow-2xl border border-slate-200 text-center space-y-6">
+    
+    <!-- Logo & Header -->
+    <div class="flex items-center justify-center gap-3">
+      <div class="w-12 h-12 rounded-2xl bg-orange-100 border border-orange-300 flex items-center justify-center text-2xl shadow-xs">
+        💳
+      </div>
+      <div class="text-left">
+        <h1 class="text-2xl font-black text-slate-900 leading-tight">Razorpay Live Tester</h1>
+        <p class="text-xs font-semibold text-slate-500">Homatri Food Services</p>
+      </div>
+    </div>
+
+    <!-- Active Key Info Box -->
+    <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-left space-y-2 text-xs">
+      <div class="flex justify-between items-center">
+        <span class="font-bold text-slate-600">Razorpay Key ID:</span>
+        <span class="font-mono bg-white px-2 py-0.5 rounded border border-slate-300 font-bold text-slate-900">
+          rzp_live_TTCnAhgfkFLtmh
+        </span>
+      </div>
+      <div class="flex justify-between items-center">
+        <span class="font-bold text-slate-600">Merchant Name:</span>
+        <span class="font-bold text-slate-800">Homatri Tiffin Services</span>
+      </div>
+      <div class="flex justify-between items-center">
+        <span class="font-bold text-slate-600">Status:</span>
+        <span class="bg-emerald-100 text-emerald-800 font-extrabold px-2 py-0.5 rounded-full text-[10px]">
+          READY TO TRIGGER
+        </span>
+      </div>
+    </div>
+
+    <!-- Amount Selector -->
+    <div class="text-left space-y-2">
+      <label class="block text-xs font-bold text-slate-700">Select Test Order Amount:</label>
+      <div class="grid grid-cols-2 gap-3">
+        <button
+          type="button"
+          id="btnAmt1"
+          onclick="setTestAmount(100, '₹1.00')"
+          className="p-3 border-2 border-orange-500 bg-orange-50 text-orange-900 rounded-2xl font-bold text-xs text-center"
+        >
+          ₹1.00 (Test Charge)
+        </button>
+        <button
+          type="button"
+          id="btnAmt179"
+          onclick="setTestAmount(17900, '₹179.00')"
+          className="p-3 border border-slate-300 bg-white text-slate-700 rounded-2xl font-bold text-xs text-center hover:border-orange-500"
+        >
+          ₹179.00 (Full Tiffin)
+        </button>
+      </div>
+    </div>
+
+    <!-- Trigger Button -->
+    <button
+      type="button"
+      onclick="openRazorpayCheckout()"
+      class="w-full bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-extrabold py-4 px-6 rounded-2xl shadow-lg hover:shadow-xl transition-all text-base flex items-center justify-center gap-3 cursor-pointer"
+    >
+      <span>🚀 CLICK HERE TO OPEN RAZORPAY MODAL</span>
+    </button>
+
+    <!-- Response Display Container -->
+    <div id="responseContainer" class="hidden p-4 rounded-2xl text-xs text-left border font-mono whitespace-pre-wrap"></div>
+
+    <p class="text-[11px] text-slate-400">
+      Clicking the button loads Razorpay's official JavaScript SDK directly from Razorpay servers and opens the native payment popup window.
+    </p>
+
+  </div>
+
+  <script>
+    let selectedAmountPaise = 100;
+    let selectedAmountLabel = "₹1.00";
+
+    function setTestAmount(paise, label) {
+      selectedAmountPaise = paise;
+      selectedAmountLabel = label;
+      alert(`Amount set to ${label}`);
+    }
+
+    function openRazorpayCheckout() {
+      const responseBox = document.getElementById("responseContainer");
+      responseBox.classList.add("hidden");
+
+      if (typeof window.Razorpay === "undefined") {
+        alert("Error: Razorpay SDK failed to load. Please check your internet connection.");
+        return;
+      }
+
+      const options = {
+        key: "rzp_live_TTCnAhgfkFLtmh",
+        amount: selectedAmountPaise,
+        currency: "INR",
+        name: "Homatri Tiffin Services",
+        description: `Live Payment Test (${selectedAmountLabel})`,
+        image: "https://homatri.com/logo.jpg",
+        prefill: {
+          name: "Dinesh Chandan",
+          email: "dinesh@homatri.com",
+          contact: "7416767453"
+        },
+        theme: {
+          color: "#E53A00"
+        },
+        handler: function (response) {
+          responseBox.classList.remove("hidden");
+          responseBox.className = "p-4 rounded-2xl text-xs text-left border border-emerald-300 bg-emerald-50 text-emerald-900 font-mono whitespace-pre-wrap";
+          responseBox.innerHTML = "✅ PAYMENT SUCCESSFUL!\n\nRazorpay Payment ID: " + response.razorpay_payment_id + "\nSignature: " + (response.razorpay_signature || "N/A");
+          alert("🎉 Payment Successful! Payment ID: " + response.razorpay_payment_id);
+        },
+        modal: {
+          ondismiss: function () {
+            responseBox.classList.remove("hidden");
+            responseBox.className = "p-4 rounded-2xl text-xs text-left border border-amber-300 bg-amber-50 text-amber-900 font-mono whitespace-pre-wrap";
+            responseBox.innerHTML = "⚠️ Payment Modal Dismissed / Closed by user.";
+          }
+        }
+      };
+
+      try {
+        const rzp = new window.Razorpay(options);
+        rzp.open();
+      } catch (err) {
+        responseBox.classList.remove("hidden");
+        responseBox.className = "p-4 rounded-2xl text-xs text-left border border-red-300 bg-red-50 text-red-900 font-mono whitespace-pre-wrap";
+        responseBox.innerHTML = "🔴 Razorpay Initialization Error:\n" + err.message;
+      }
+    }
+  </script>
+</body>
+</html>
