@@ -58,7 +58,6 @@ export default function PhoneOtpModal() {
   const [avatarId, setAvatarId] = useState(CARTOON_AVATARS[0].id);
   const [step, setStep] = useState("PHONE");
   const [localError, setLocalError] = useState("");
-  const [isTestMode, setIsTestMode] = useState(false);
 
   useEffect(() => {
     if (!isAuthModalOpen) return;
@@ -72,7 +71,6 @@ export default function PhoneOtpModal() {
     setOtp("");
     setStep("PHONE");
     setLocalError("");
-    setIsTestMode(false);
   };
 
   const sendCode = async (event) => {
@@ -90,9 +88,7 @@ export default function PhoneOtpModal() {
         identifier: `+91${digits}`,
         onSuccess: () => setStep("OTP"),
         onFailure: (error) => {
-          console.warn("MSG91 Widget Error, using fallback test code 123456:", error);
-          setIsTestMode(true);
-          setStep("OTP");
+          setLocalError(error?.message || "MSG91 OTP SMS failed to send.");
         },
       });
 
@@ -102,9 +98,7 @@ export default function PhoneOtpModal() {
       }
       setStep("OTP");
     } catch (error) {
-      console.warn("MSG91 SDK load failed, activating Dev Test Code 123456:", error);
-      setIsTestMode(true);
-      setStep("OTP");
+      setLocalError(error?.message || "MSG91 SDK failed to initialize.");
     }
   };
 
@@ -112,27 +106,21 @@ export default function PhoneOtpModal() {
     event.preventDefault();
     const digits = phone.replace(/\D/g, "").slice(-10);
     if (otp.length !== 6) {
-      setLocalError("Enter the 6-digit OTP.");
+      setLocalError("Enter the 6-digit OTP code received on your phone.");
       return;
     }
     setLocalError("");
 
     try {
       let msg91Token = "";
-      if (!isTestMode) {
-        const verifier = window.verifyOtp || window.verifyOTP;
-        if (typeof verifier === "function") {
-          try {
-            const result = await Promise.resolve(verifier(otp));
-            msg91Token = result?.message || result?.token || result?.accessToken || JSON.stringify(result);
-          } catch (e) {
-            console.warn("MSG91 verifier failed, falling back to test token:", e);
-          }
-        }
+      const verifier = window.verifyOtp || window.verifyOTP;
+      if (typeof verifier === "function") {
+        const result = await Promise.resolve(verifier(otp));
+        msg91Token = result?.message || result?.token || result?.accessToken || JSON.stringify(result);
       }
 
       if (!msg91Token) {
-        msg91Token = `dev:${otp}`;
+        throw new Error("Invalid OTP code. Please check your SMS and try again.");
       }
 
       await completeMsg91Auth({
@@ -146,7 +134,7 @@ export default function PhoneOtpModal() {
       setStep("PHONE");
       close();
     } catch (error) {
-      setLocalError(error?.message || "OTP verification failed.");
+      setLocalError(error?.message || "OTP verification failed. Please check your code.");
     }
   };
 
@@ -214,20 +202,14 @@ export default function PhoneOtpModal() {
               disabled={isLoading}
               className="w-full bg-homatri-orange hover:bg-homatri-orange-dark text-white font-bold py-3 rounded-xl shadow-md transition-all disabled:opacity-60"
             >
-              {isLoading ? "Sending OTP…" : "Send OTP"}
+              {isLoading ? "Sending OTP SMS…" : "Send OTP SMS"}
             </button>
           </form>
         ) : (
           <form onSubmit={verifyCode} className="mt-6 space-y-4">
             <p className="text-xs text-homatri-muted text-center">
-              Enter the OTP sent to <strong>+91 {phone.replace(/\D/g, "").slice(-10)}</strong>
+              Enter the 6-digit OTP code sent to <strong>+91 {phone.replace(/\D/g, "").slice(-10)}</strong>
             </p>
-
-            {isTestMode && (
-              <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-3 text-xs text-center font-medium">
-                💡 <strong>Dev Testing Active</strong>: Enter test OTP code <strong className="text-homatri-orange font-bold text-sm">123456</strong> to verify!
-              </div>
-            )}
 
             <OtpBoxes value={otp} onChange={setOtp} />
 
@@ -236,7 +218,7 @@ export default function PhoneOtpModal() {
               disabled={isLoading}
               className="w-full bg-homatri-orange hover:bg-homatri-orange-dark text-white font-bold py-3 rounded-xl shadow-md transition-all disabled:opacity-60"
             >
-              {isLoading ? "Verifying…" : "Verify & Continue"}
+              {isLoading ? "Verifying Real OTP…" : "Verify & Continue"}
             </button>
             <button type="button" onClick={() => setStep("PHONE")} className="w-full text-sm font-semibold text-homatri-muted hover:text-homatri-dark">
               Change mobile number
