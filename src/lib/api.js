@@ -96,6 +96,18 @@ export async function submitRiderOnboarding(body, token) {
   return apiRequest("/api/v1/auth/onboarding/rider", { method: "POST", token, body });
 }
 
+export async function fetchSavedAddresses(token) {
+  return apiRequest("/api/v1/customer/addresses", { token });
+}
+
+export async function saveCustomerAddress(body, token) {
+  return apiRequest("/api/v1/customer/addresses", { method: "POST", token, body });
+}
+
+export async function deleteCustomerAddress(addressId, token) {
+  return apiRequest(`/api/v1/customer/addresses/${addressId}`, { method: "DELETE", token });
+}
+
 export async function fetchBulkTemplates(chefPhone) {
   const suffix = chefPhone ? `?chef_phone=${encodeURIComponent(chefPhone)}` : "";
   return apiRequest(`/api/v1/bulk/templates${suffix}`);
