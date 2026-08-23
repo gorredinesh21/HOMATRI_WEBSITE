@@ -163,32 +163,38 @@ export function CartProvider({ children }) {
     try {
       const result = await checkoutOrder(payload, token);
 
-      if (result?.payment_url) {
-        window.location.href = result.payment_url;
-        return result;
+      // Prioritize Native Razorpay Checkout Popup Modal
+      if (result?.razorpay_order_id || result?.razorpay_order?.id) {
+        try {
+          const Razorpay = await loadRazorpay();
+          const orderId = result.order_id || result.id;
+          const options = {
+            key: result.razorpay_key_id || result.key_id || "rzp_live_TTCnAhgfkFLtmh",
+            amount: result.amount,
+            currency: result.currency || "INR",
+            name: "Homatri Tiffin Services",
+            description: `${mealWindow || "Daily Tiffin"} Order (${orderId})`,
+            order_id: result.razorpay_order_id || result.razorpay_order?.id,
+            prefill: { contact: customerPhone || "7416767453" },
+            theme: { color: "#E53A00" },
+            handler: () => {
+              clearCart();
+              closeCart();
+              if (orderId) {
+                window.location.href = `/order/tracking?order_id=${encodeURIComponent(orderId)}`;
+              }
+            },
+          };
+          const checkout = new Razorpay(options);
+          checkout.open();
+          return result;
+        } catch (e) {
+          console.warn("Razorpay Checkout Modal failed to load, falling back to simulator:", e.message);
+        }
       }
 
-      if (result?.razorpay_order_id || result?.razorpay_order?.id) {
-        const Razorpay = await loadRazorpay();
-        const orderId = result.order_id || result.id;
-        const options = {
-          key: result.razorpay_key_id || result.key_id,
-          amount: result.amount,
-          currency: result.currency || "INR",
-          name: "Homatri",
-          description: `${mealWindow || "Tiffin"} order`,
-          order_id: result.razorpay_order_id || result.razorpay_order?.id,
-          prefill: { contact: customerPhone || "" },
-          handler: () => {
-            clearCart();
-            closeCart();
-            if (orderId) {
-              window.location.href = `/order/tracking?order_id=${encodeURIComponent(orderId)}`;
-            }
-          },
-        };
-        const checkout = new Razorpay(options);
-        checkout.open();
+      if (result?.payment_url) {
+        window.location.href = result.payment_url;
         return result;
       }
 

@@ -10,6 +10,17 @@ export default function CustomerAccountPage() {
   const { user, customerPhone, logout, isAuthenticated } = useAuth();
   const [selectedAvatar, setSelectedAvatar] = useState(user?.avatar_url || CARTOON_AVATARS[0].id);
   const [dietaryTags, setDietaryTags] = useState(["PURE_VEG", "LOW_SPICE"]);
+  const [myPhone, setMyPhone] = useState(user?.phone || customerPhone || "7416767453");
+  const [isPhoneSaved, setIsPhoneSaved] = useState(false);
+
+  const handleSavePhone = () => {
+    const clean = myPhone.replace(/\D/g, "").slice(-10);
+    if (clean.length === 10) {
+      window.localStorage.setItem("homatri_user_phone", clean);
+      setIsPhoneSaved(true);
+      setTimeout(() => setIsPhoneSaved(false), 3000);
+    }
+  };
 
   const currentAvatar = CARTOON_AVATARS.find((a) => a.id === selectedAvatar) || CARTOON_AVATARS[0];
 
@@ -52,9 +63,22 @@ export default function CustomerAccountPage() {
                   VERIFIED
                 </span>
               </div>
-              <p className="text-sm font-semibold text-homatri-muted mt-1">
-                +91 {user?.phone || customerPhone || "7416767453"}
-              </p>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-xs font-bold text-homatri-muted">+91</span>
+                <input
+                  type="tel"
+                  value={myPhone}
+                  onChange={(e) => setMyPhone(e.target.value)}
+                  className="px-2 py-1 border border-homatri-border rounded-lg text-xs font-bold text-homatri-dark w-36 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={handleSavePhone}
+                  className="bg-homatri-orange text-white text-[10px] font-bold px-2 py-1 rounded-lg hover:bg-homatri-orange-dark"
+                >
+                  {isPhoneSaved ? "Saved ✓" : "Save Phone"}
+                </button>
+              </div>
               <div className="flex items-center gap-1.5 mt-2 text-xs text-homatri-muted">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
                 <span>30-Day Persistent Session Active</span>
