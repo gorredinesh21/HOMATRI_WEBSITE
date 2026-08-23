@@ -1,7 +1,9 @@
 import { Figtree, Fraunces } from "next/font/google";
+import Script from "next/script";
 import { LocationProvider } from "@/context/LocationContext";
 import { CartProvider } from "@/context/CartContext";
 import { AuthProvider } from "@/context/AuthContext";
+import AppProviders from "@/app/providers";
 import GlobalOverlays from "@/components/GlobalOverlays";
 import "./globals.css";
 
@@ -28,14 +30,17 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${figtree.variable} ${fraunces.variable} scroll-smooth`}>
       <body className="font-sans">
-        <AuthProvider>
-          <LocationProvider>
-            <CartProvider>
-              {children}
-              <GlobalOverlays />
-            </CartProvider>
-          </LocationProvider>
-        </AuthProvider>
+        <Script src="https://verify.msg91.com/otp-provider.js" strategy="afterInteractive" />
+        <AppProviders>
+          <AuthProvider>
+            <LocationProvider>
+              <CartProvider>
+                {children}
+                <GlobalOverlays />
+              </CartProvider>
+            </LocationProvider>
+          </AuthProvider>
+        </AppProviders>
       </body>
     </html>
   );

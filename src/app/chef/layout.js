@@ -1,9 +1,14 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { ChefDashboardProvider } from "@/context/ChefDashboardContext";
 import LeftSidebarNav from "./_components/LeftSidebarNav";
 
 export default function ChefLayout({ children }) {
+  const pathname = usePathname();
+  if (pathname?.startsWith("/chef/onboarding")) {
+    return <div className="min-h-screen bg-homatri-cream">{children}</div>;
+  }
   return (
     <ChefDashboardProvider>
       <div className="min-h-screen bg-homatri-cream flex flex-col lg:flex-row">

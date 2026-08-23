@@ -1,5 +1,6 @@
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ||
+  process.env.NEXT_PUBLIC_BACKEND_URL ||
   "https://homatri-backend-195132182954.us-central1.run.app";
 
 export const DELIVERY_FEE_DISPLAY = 30;
@@ -25,6 +26,7 @@ export async function apiRequest(path, { method = "GET", token, body, headers } 
     },
     body: body ? JSON.stringify(body) : undefined,
     cache: "no-store",
+    credentials: "include",
   });
 
   const data = await parseJsonSafe(response);
@@ -52,6 +54,55 @@ export async function requestOtp(phone) {
     method: "POST",
     body: { phone },
   });
+}
+
+export async function verifyMsg91Widget({ phone, msg91Token, fullName, avatarUrl, isCartoonAvatar = true }) {
+  return apiRequest("/api/v1/auth/verify-msg91-widget", {
+    method: "POST",
+    body: {
+      phone,
+      msg91_token: msg91Token,
+      full_name: fullName,
+      avatar_url: avatarUrl,
+      is_cartoon_avatar: isCartoonAvatar,
+    },
+  });
+}
+
+export async function googleLogin({ idToken, avatarUrl, isCartoonAvatar }) {
+  return apiRequest("/api/v1/auth/google-login", {
+    method: "POST",
+    body: {
+      id_token: idToken,
+      avatar_url: avatarUrl,
+      is_cartoon_avatar: isCartoonAvatar,
+    },
+  });
+}
+
+export async function refreshAuthSession() {
+  return apiRequest("/api/v1/auth/refresh", { method: "POST" });
+}
+
+export async function fetchAuthMe(token) {
+  return apiRequest("/api/v1/auth/me", { token });
+}
+
+export async function submitChefOnboarding(body, token) {
+  return apiRequest("/api/v1/auth/onboarding/chef", { method: "POST", token, body });
+}
+
+export async function submitRiderOnboarding(body, token) {
+  return apiRequest("/api/v1/auth/onboarding/rider", { method: "POST", token, body });
+}
+
+export async function fetchBulkTemplates(chefPhone) {
+  const suffix = chefPhone ? `?chef_phone=${encodeURIComponent(chefPhone)}` : "";
+  return apiRequest(`/api/v1/bulk/templates${suffix}`);
+}
+
+export async function checkoutBulkOrder(payload, token) {
+  return apiRequest("/api/v1/bulk/checkout", { method: "POST", token, body: payload });
 }
 
 export async function verifyOtp({ phone, otp }) {

@@ -53,6 +53,9 @@ export default function Navbar() {
             <Link href="#trust" className="hover:text-homatri-orange transition-colors">
               Hygiene & Trust
             </Link>
+            <Link href="/bulk" className="hover:text-homatri-orange transition-colors">
+              Bulk Catering
+            </Link>
           </nav>
 
           {/* Primary Action Button */}

@@ -1,7 +1,13 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { requestOtp as requestOtpApi, verifyOtp as verifyOtpApi } from "@/lib/api";
+import {
+  googleLogin,
+  refreshAuthSession,
+  requestOtp as requestOtpApi,
+  verifyMsg91Widget,
+  verifyOtp as verifyOtpApi,
+} from "@/lib/api";
 
 const AuthContext = createContext(null);
 const STORAGE_KEY = "homatri_customer_session";
@@ -10,38 +16,75 @@ export function AuthProvider({ children }) {
   const [status, setStatus] = useState("UNKNOWN");
   const [token, setToken] = useState(null);
   const [customerPhone, setCustomerPhone] = useState(null);
+  const [user, setUser] = useState(null);
   const [otpRequestId, setOtpRequestId] = useState(null);
   const [otpError, setOtpError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const continuationRef = useRef(null);
 
-  useEffect(() => {
-    try {
-      const raw = window.sessionStorage.getItem(STORAGE_KEY);
-      if (!raw) {
-        setStatus("GUEST");
-        return;
-      }
-      const parsed = JSON.parse(raw);
-      if (parsed?.token && parsed?.customerPhone) {
-        setToken(parsed.token);
-        setCustomerPhone(parsed.customerPhone);
-        setStatus("AUTHENTICATED");
-      } else {
-        setStatus("GUEST");
-      }
-    } catch {
-      setStatus("GUEST");
-    }
-  }, []);
-
-  const persist = useCallback((nextToken, phone) => {
+  const persist = useCallback((nextToken, phone, nextUser) => {
     window.sessionStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ token: nextToken, customerPhone: phone })
+      JSON.stringify({ token: nextToken, customerPhone: phone, user: nextUser })
     );
   }, []);
+
+  const applySession = useCallback(
+    (result, fallbackPhone) => {
+      const nextToken = result?.access_token || result?.token || result?.jwt || null;
+      if (!nextToken) throw new Error("No session token was returned.");
+      const nextUser = result.user || { phone: fallbackPhone };
+      const phone = nextUser.phone || fallbackPhone || null;
+      setToken(nextToken);
+      setCustomerPhone(phone);
+      setUser(nextUser);
+      setStatus("AUTHENTICATED");
+      persist(nextToken, phone, nextUser);
+      setIsAuthModalOpen(false);
+      const continuation = continuationRef.current;
+      continuationRef.current = null;
+      if (typeof continuation === "function") continuation();
+      return result;
+    },
+    [persist]
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    const hydrate = async () => {
+      try {
+        const raw = window.sessionStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed?.token) {
+            if (!cancelled) {
+              setToken(parsed.token);
+              setCustomerPhone(parsed.customerPhone || null);
+              setUser(parsed.user || { phone: parsed.customerPhone });
+              setStatus("AUTHENTICATED");
+            }
+          }
+        }
+        try {
+          const refreshed = await refreshAuthSession();
+          if (refreshed?.access_token && !cancelled) {
+            applySession(refreshed, refreshed.user?.phone);
+            return;
+          }
+        } catch {
+          /* guest until they sign in */
+        }
+        if (!cancelled && !raw) setStatus("GUEST");
+      } catch {
+        if (!cancelled) setStatus("GUEST");
+      }
+    };
+    hydrate();
+    return () => {
+      cancelled = true;
+    };
+  }, [applySession]);
 
   const requestOtp = useCallback(async (phone) => {
     setIsLoading(true);
@@ -60,39 +103,71 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  const verifyOtp = useCallback(async ({ phone, otp }) => {
-    setIsLoading(true);
-    setOtpError(null);
-    setStatus("OTP_SUBMITTING");
-    try {
-      const result = await verifyOtpApi({ phone, otp });
-      const nextToken = result?.token || result?.access_token || result?.jwt || null;
-      if (!nextToken) {
-        throw new Error("OTP verified but no session token was returned.");
+  const verifyOtp = useCallback(
+    async ({ phone, otp }) => {
+      setIsLoading(true);
+      setOtpError(null);
+      setStatus("OTP_SUBMITTING");
+      try {
+        const result = await verifyOtpApi({ phone, otp });
+        return applySession(result, phone);
+      } catch (error) {
+        setStatus("ERROR");
+        setOtpError(error?.message || "Invalid OTP. Please retry.");
+        throw error;
+      } finally {
+        setIsLoading(false);
       }
-      setToken(nextToken);
-      setCustomerPhone(phone);
-      setStatus("AUTHENTICATED");
-      persist(nextToken, phone);
-      setIsAuthModalOpen(false);
-      const continuation = continuationRef.current;
-      continuationRef.current = null;
-      if (typeof continuation === "function") {
-        continuation();
+    },
+    [applySession]
+  );
+
+  const completeMsg91Auth = useCallback(
+    async ({ phone, msg91Token, fullName, avatarUrl }) => {
+      setIsLoading(true);
+      setOtpError(null);
+      try {
+        const result = await verifyMsg91Widget({
+          phone,
+          msg91Token,
+          fullName,
+          avatarUrl,
+          isCartoonAvatar: true,
+        });
+        return applySession(result, phone);
+      } catch (error) {
+        setStatus("ERROR");
+        setOtpError(error?.message || "MSG91 verification failed.");
+        throw error;
+      } finally {
+        setIsLoading(false);
       }
-      return result;
-    } catch (error) {
-      setStatus("ERROR");
-      setOtpError(error?.message || "Invalid OTP. Please retry.");
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [persist]);
+    },
+    [applySession]
+  );
+
+  const completeGoogleAuth = useCallback(
+    async ({ idToken, avatarUrl, isCartoonAvatar }) => {
+      setIsLoading(true);
+      setOtpError(null);
+      try {
+        const result = await googleLogin({ idToken, avatarUrl, isCartoonAvatar });
+        return applySession(result, result.user?.phone);
+      } catch (error) {
+        setStatus("ERROR");
+        setOtpError(error?.message || "Google sign-in failed.");
+        throw error;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [applySession]
+  );
 
   const logout = useCallback(async () => {
     setToken(null);
     setCustomerPhone(null);
+    setUser(null);
     setOtpRequestId(null);
     setStatus("GUEST");
     continuationRef.current = null;
@@ -100,30 +175,28 @@ export function AuthProvider({ children }) {
   }, []);
 
   const refreshSession = useCallback(async () => {
-    if (!token) {
-      setStatus("GUEST");
-    }
-  }, [token]);
+    const refreshed = await refreshAuthSession();
+    if (refreshed?.access_token) applySession(refreshed, refreshed.user?.phone);
+  }, [applySession]);
 
-  const requireAuthentication = useCallback((continuation) => {
-    if (status === "AUTHENTICATED" && token) {
-      if (typeof continuation === "function") continuation();
-      return;
-    }
-    continuationRef.current = continuation || null;
-    setIsAuthModalOpen(true);
-    if (status !== "OTP_REQUESTED" && status !== "OTP_SUBMITTING") {
-      setStatus("GUEST");
-    }
-  }, [status, token]);
+  const requireAuthentication = useCallback(
+    (continuation) => {
+      if (status === "AUTHENTICATED" && token) {
+        if (typeof continuation === "function") continuation();
+        return;
+      }
+      continuationRef.current = continuation || null;
+      setIsAuthModalOpen(true);
+    },
+    [status, token]
+  );
 
-  const loginWithPhone = useCallback((phone, nextToken) => {
-    setCustomerPhone(phone);
-    setToken(nextToken);
-    setStatus("AUTHENTICATED");
-    persist(nextToken, phone);
-    setIsAuthModalOpen(false);
-  }, [persist]);
+  const loginWithPhone = useCallback(
+    (phone, nextToken) => {
+      applySession({ access_token: nextToken, user: { phone } }, phone);
+    },
+    [applySession]
+  );
 
   const isAuthenticated = status === "AUTHENTICATED" && Boolean(token);
 
@@ -133,7 +206,7 @@ export function AuthProvider({ children }) {
       token,
       jwtToken: token,
       customerPhone,
-      user: customerPhone ? { phone: customerPhone } : null,
+      user: user || (customerPhone ? { phone: customerPhone } : null),
       otpRequestId,
       otpError,
       isLoading,
@@ -142,6 +215,8 @@ export function AuthProvider({ children }) {
       setIsAuthModalOpen,
       requestOtp,
       verifyOtp,
+      completeMsg91Auth,
+      completeGoogleAuth,
       logout,
       refreshSession,
       requireAuthentication,
@@ -151,6 +226,7 @@ export function AuthProvider({ children }) {
       status,
       token,
       customerPhone,
+      user,
       otpRequestId,
       otpError,
       isLoading,
@@ -158,6 +234,8 @@ export function AuthProvider({ children }) {
       isAuthModalOpen,
       requestOtp,
       verifyOtp,
+      completeMsg91Auth,
+      completeGoogleAuth,
       logout,
       refreshSession,
       requireAuthentication,
