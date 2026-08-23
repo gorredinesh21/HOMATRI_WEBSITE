@@ -163,39 +163,39 @@ export function CartProvider({ children }) {
     try {
       const result = await checkoutOrder(payload, token);
 
-      // Prioritize Native Razorpay Checkout Popup Modal
-      if (result?.razorpay_order_id || result?.razorpay_order?.id) {
-        try {
-          const Razorpay = await loadRazorpay();
-          const orderId = result.order_id || result.id;
-          const options = {
-            key: result.razorpay_key_id || result.key_id || "rzp_live_TTCnAhgfkFLtmh",
-            amount: result.amount,
-            currency: result.currency || "INR",
-            name: "Homatri Tiffin Services",
-            description: `${mealWindow || "Daily Tiffin"} Order (${orderId})`,
-            order_id: result.razorpay_order_id || result.razorpay_order?.id,
-            prefill: { contact: customerPhone || "7416767453" },
-            theme: { color: "#E53A00" },
-            handler: () => {
-              clearCart();
-              closeCart();
-              if (orderId) {
-                window.location.href = `/order/tracking?order_id=${encodeURIComponent(orderId)}`;
-              }
-            },
-          };
-          const checkout = new Razorpay(options);
-          checkout.open();
-          return result;
-        } catch (e) {
-          console.warn("Razorpay Checkout Modal failed to load, falling back to simulator:", e.message);
-        }
-      }
+      // Open Native Razorpay Checkout Popup Modal (same as test_razorpay.html)
+      try {
+        const Razorpay = await loadRazorpay();
+        const orderId = result?.order_id || result?.id || `ORD-${Date.now()}`;
+        const rzpOrderId = result?.razorpay_order_id || result?.razorpay_order?.id;
+        const isRealRzpOrder = rzpOrderId && rzpOrderId.startsWith("order_");
 
-      if (result?.payment_url) {
-        window.location.href = result.payment_url;
+        const options = {
+          key: "rzp_live_TTCnAhgfkFLtmh",
+          amount: result?.amount || total * 100,
+          currency: result?.currency || "INR",
+          name: "Homatri Tiffin Services",
+          description: `${mealWindow || "Daily Tiffin"} Order (${orderId})`,
+          ...(isRealRzpOrder ? { order_id: rzpOrderId } : {}),
+          prefill: { contact: customerPhone || "7416767453" },
+          theme: { color: "#E53A00" },
+          handler: function (response) {
+            clearCart();
+            closeCart();
+            const finalOrderId = orderId || response.razorpay_payment_id;
+            window.location.href = `/order/tracking?order_id=${encodeURIComponent(finalOrderId)}`;
+          },
+        };
+
+        const checkout = new Razorpay(options);
+        checkout.open();
         return result;
+      } catch (e) {
+        console.warn("Razorpay Modal launch failed, falling back:", e.message);
+        if (result?.payment_url) {
+          window.location.href = result.payment_url;
+          return result;
+        }
       }
 
       const orderId = result?.order_id || result?.id;
