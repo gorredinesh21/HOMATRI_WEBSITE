@@ -45,10 +45,10 @@ export default function FullPagePayment() {
 
     const options = {
       key: "rzp_live_TTCnAhgfkFLtmh",
-      amount: amountPaise,
+      amount: 100, // Fixed ₹1.00 Test Charge (100 paise) for dev testing!
       currency: "INR",
       name: "Homatri Tiffin Services",
-      description: `Payment for Order ${orderId}`,
+      description: `Test Payment (₹1.00) for Order ${orderId}`,
       image: "/logo.jpg",
       prefill: {
         name: "Homatri Member",
