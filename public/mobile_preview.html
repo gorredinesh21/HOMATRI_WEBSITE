@@ -12,7 +12,7 @@
     
     <div class="text-center text-white space-y-1">
       <h1 class="text-xl font-bold">📱 Homatri Mobile App Device Simulator</h1>
-      <p class="text-xs text-slate-400">Live 1-to-1 Web Device Simulator for Mobile Hinge Cards & Expanded Profiles</p>
+      <p class="text-xs text-slate-400">Live 1-to-1 Web Device Simulator for Hinge Swipe Cards & Instagram Reels</p>
     </div>
 
     <!-- Phone Frame Container -->
@@ -40,8 +40,14 @@
         <!-- Hinge Card Content Area -->
         <div class="flex-1 p-4 overflow-y-auto space-y-4">
           
-          <!-- HINGE STACKED CARD -->
-          <div class="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
+          <!-- HINGE STACKED CARD WITH PANRESPONDER STAMP -->
+          <div class="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden relative">
+            
+            <!-- Like Gesture Stamp -->
+            <div class="absolute top-8 right-6 z-30 bg-emerald-100/90 border-4 border-emerald-700 text-emerald-800 font-black text-xs px-3 py-1.5 rounded-xl rotate-12 shadow-md">
+              ❤️ LIKE / ORDER
+            </div>
+
             <div class="h-56 bg-cover bg-center relative" style="background-image: url('https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80')">
               <span class="absolute top-3 left-3 bg-slate-900/90 text-white text-[10px] font-bold px-2.5 py-1 rounded-xl">
                 🌊 MALVANI & KONKANI
@@ -78,7 +84,7 @@
               </button>
 
               <p class="text-[10px] font-bold text-slate-400 uppercase text-center pt-1">
-                Tap card to expand full menu & homemaker story ➔
+                👉 Drag Left/Right to Swipe Cards (Hinge Style) ➔
               </p>
             </div>
           </div>
@@ -88,6 +94,7 @@
         <!-- Bottom Navigation Bar -->
         <div class="bg-white border-t border-slate-200 py-3 flex justify-around text-center text-xs font-bold">
           <span class="text-orange-600">🍱 Explore</span>
+          <span class="text-slate-400">🎥 Reels</span>
           <span class="text-slate-400">🛒 Cart (1)</span>
           <span class="text-slate-400">👤 Account</span>
         </div>
