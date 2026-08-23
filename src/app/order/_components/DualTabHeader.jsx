@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { MapPin, ShoppingBag, UserRound } from "lucide-react";
 import { useLocation } from "@/context/LocationContext";
+import UserProfileModal from "./UserProfileModal";
 
 const CLUSTERS = ["Ghansoli", "Vashi", "Airoli"];
 
@@ -19,6 +20,7 @@ export default function DualTabHeader({
 }) {
   const { setCluster } = useLocation();
   const [isLocationMenuOpen, setIsLocationMenuOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-homatri-border">
@@ -63,10 +65,16 @@ export default function DualTabHeader({
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={onAuthClick}
-            className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold text-homatri-dark border border-homatri-border rounded-full px-3 py-1.5 hover:bg-homatri-cream"
+            onClick={() => {
+              if (isAuthenticated) {
+                setIsProfileModalOpen(true);
+              } else {
+                onAuthClick();
+              }
+            }}
+            className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold text-homatri-dark border border-homatri-border rounded-full px-3 py-1.5 hover:bg-homatri-cream transition-colors"
           >
-            <UserRound className="w-3.5 h-3.5" />
+            <UserRound className="w-3.5 h-3.5 text-homatri-orange" />
             {isAuthenticated ? "Account" : "Sign In"}
           </button>
           <button
@@ -111,6 +119,12 @@ export default function DualTabHeader({
           </button>
         </div>
       </div>
+
+      {/* User Profile Modal */}
+      <UserProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+      />
     </header>
   );
 }
