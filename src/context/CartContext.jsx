@@ -162,49 +162,16 @@ export function CartProvider({ children }) {
 
     try {
       const result = await checkoutOrder(payload, token);
+      const orderId = result?.order_id || result?.id || `ORD-${Date.now()}`;
+      const amountPaise = result?.amount || total * 100;
+      const amountRupees = (amountPaise / 100).toFixed(2);
 
-      // Open Native Razorpay Checkout Popup Modal (same as test_razorpay.html)
-      try {
-        const Razorpay = await loadRazorpay();
-        const orderId = result?.order_id || result?.id || `ORD-${Date.now()}`;
-        const rzpOrderId = result?.razorpay_order_id || result?.razorpay_order?.id;
-        const isRealRzpOrder = rzpOrderId && rzpOrderId.startsWith("order_");
+      clearCart();
+      closeCart();
 
-        const options = {
-          key: "rzp_live_TTCnAhgfkFLtmh",
-          amount: result?.amount || total * 100,
-          currency: result?.currency || "INR",
-          name: "Homatri Tiffin Services",
-          description: `${mealWindow || "Daily Tiffin"} Order (${orderId})`,
-          ...(isRealRzpOrder ? { order_id: rzpOrderId } : {}),
-          prefill: { contact: customerPhone || "7416767453" },
-          theme: { color: "#E53A00" },
-          handler: function (response) {
-            clearCart();
-            closeCart();
-            const finalOrderId = orderId || response.razorpay_payment_id;
-            window.location.href = `/order/tracking?order_id=${encodeURIComponent(finalOrderId)}`;
-          },
-        };
-
-        const checkout = new Razorpay(options);
-        checkout.open();
-        return result;
-      } catch (e) {
-        console.warn("Razorpay Modal launch failed, falling back:", e.message);
-        if (result?.payment_url) {
-          window.location.href = result.payment_url;
-          return result;
-        }
-      }
-
-      const orderId = result?.order_id || result?.id;
-      if (orderId) {
-        clearCart();
-        closeCart();
-        window.location.href = `/order/tracking?order_id=${encodeURIComponent(orderId)}`;
-        return result;
-      }
+      // Full page navigation to dedicated Payment Page (Zero Popup Blockers!)
+      window.location.href = `/order/payment?order_id=${encodeURIComponent(orderId)}&amount=${encodeURIComponent(amountRupees)}`;
+      return result;
 
       setError("Checkout started, but the payment session was incomplete. Please retry.");
       return result;
