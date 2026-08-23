@@ -1,17 +1,53 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { CARTOON_AVATARS } from "@/lib/authClient";
-import { MapPin, Package, ShieldCheck, LogOut, ArrowLeft, Heart, Sparkles } from "lucide-react";
+import { fetchSavedAddresses, deleteCustomerAddress, normalizeAddress } from "@/lib/api";
+import DeliveryAddressModal from "../_components/DeliveryAddressModal";
+import { MapPin, Package, ShieldCheck, LogOut, ArrowLeft, Sparkles, Edit3, Trash2, Plus } from "lucide-react";
 
 export default function CustomerAccountPage() {
-  const { user, customerPhone, logout, isAuthenticated } = useAuth();
+  const { token, user, customerPhone, logout } = useAuth();
   const [selectedAvatar, setSelectedAvatar] = useState(user?.avatar_url || CARTOON_AVATARS[0].id);
   const [dietaryTags, setDietaryTags] = useState(["PURE_VEG", "LOW_SPICE"]);
   const [myPhone, setMyPhone] = useState(user?.phone || customerPhone || "7416767453");
   const [isPhoneSaved, setIsPhoneSaved] = useState(false);
+
+  const [savedAddresses, setSavedAddresses] = useState([]);
+  const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+
+  const currentAvatar = CARTOON_AVATARS.find((a) => a.id === selectedAvatar) || CARTOON_AVATARS[0];
+
+  useEffect(() => {
+    let cancelled = false;
+    // Load from localStorage first
+    try {
+      const local = window.localStorage.getItem("homatri_saved_addresses");
+      if (local) {
+        const parsed = JSON.parse(local);
+        if (Array.isArray(parsed) && parsed.length) {
+          setSavedAddresses(parsed.map(normalizeAddress));
+        }
+      }
+    } catch (e) {}
+
+    // Fetch from backend PostgreSQL DB
+    (async () => {
+      try {
+        const remote = await fetchSavedAddresses(token);
+        if (!cancelled && Array.isArray(remote) && remote.length) {
+          setSavedAddresses(remote);
+          window.localStorage.setItem("homatri_saved_addresses", JSON.stringify(remote));
+        }
+      } catch (e) {}
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
 
   const handleSavePhone = () => {
     const clean = myPhone.replace(/\D/g, "").slice(-10);
@@ -22,7 +58,14 @@ export default function CustomerAccountPage() {
     }
   };
 
-  const currentAvatar = CARTOON_AVATARS.find((a) => a.id === selectedAvatar) || CARTOON_AVATARS[0];
+  const handleDeleteAddress = async (id) => {
+    const next = savedAddresses.filter((a) => a.id !== id);
+    setSavedAddresses(next);
+    window.localStorage.setItem("homatri_saved_addresses", JSON.stringify(next));
+    try {
+      await deleteCustomerAddress(id, token);
+    } catch (e) {}
+  };
 
   const toggleDietary = (tag) => {
     setDietaryTags((prev) =>
@@ -74,7 +117,7 @@ export default function CustomerAccountPage() {
                 <button
                   type="button"
                   onClick={handleSavePhone}
-                  className="bg-homatri-orange text-white text-[10px] font-bold px-2 py-1 rounded-lg hover:bg-homatri-orange-dark"
+                  className="bg-homatri-orange text-white text-[10px] font-bold px-2 py-1 rounded-lg hover:bg-homatri-orange-dark transition-colors"
                 >
                   {isPhoneSaved ? "Saved ✓" : "Save Phone"}
                 </button>
@@ -122,7 +165,76 @@ export default function CustomerAccountPage() {
           </div>
         </div>
 
-        {/* Section 2: Dietary Preferences */}
+        {/* Section 2: Saved Delivery Addresses (Zomato/Swiggy Style) */}
+        <div className="bg-white rounded-3xl p-6 border border-homatri-border shadow-xs space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <MapPin className="w-5 h-5 text-homatri-orange" />
+              <h2 className="font-display font-medium text-lg text-homatri-dark">Saved Delivery Addresses</h2>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsAddressModalOpen(true)}
+              className="text-xs font-bold text-homatri-orange hover:text-homatri-orange-dark flex items-center gap-1"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add New Address</span>
+            </button>
+          </div>
+
+          {savedAddresses.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {savedAddresses.map((addr) => (
+                <div
+                  key={addr.id}
+                  className="p-4 rounded-2xl border border-homatri-border bg-homatri-cream/40 flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <span className="bg-homatri-orange text-white text-[9px] font-extrabold px-2 py-0.5 rounded">
+                        {addr.addressType || "HOME"}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setIsAddressModalOpen(true)}
+                          className="text-homatri-muted hover:text-homatri-orange text-xs font-bold"
+                          title="Edit Address"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteAddress(addr.id)}
+                          className="text-homatri-muted hover:text-red-600 text-xs font-bold"
+                          title="Delete Address"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                    <p className="text-xs font-bold text-homatri-dark mt-2">
+                      {addr.fullAddress || `${addr.flatNo}, ${addr.streetAddress}`}
+                    </p>
+                    <p className="text-[10px] font-semibold text-homatri-muted mt-1">
+                      Phone: +91 {addr.phone || "7416767453"}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsAddressModalOpen(true)}
+              className="w-full p-4 border border-dashed border-homatri-orange/60 bg-homatri-orange-light/30 rounded-2xl text-xs font-bold text-homatri-orange hover:bg-homatri-orange/10 transition-colors text-center"
+            >
+              + Click to add your first delivery address (Flat No, Street, Sector)
+            </button>
+          )}
+        </div>
+
+        {/* Section 3: Dietary Preferences */}
         <div className="bg-white rounded-3xl p-6 border border-homatri-border shadow-xs space-y-4">
           <div className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-homatri-orange" />
@@ -159,7 +271,7 @@ export default function CustomerAccountPage() {
           </div>
         </div>
 
-        {/* Section 3: Cartoon Avatar Selection */}
+        {/* Section 4: Cartoon Avatar Selection */}
         <div className="bg-white rounded-3xl p-6 border border-homatri-border shadow-xs space-y-4">
           <h2 className="font-display font-medium text-lg text-homatri-dark">Pick Your Cartoon Avatar</h2>
           <p className="text-xs text-homatri-muted">Choose how your avatar appears across Homatri community stories.</p>
@@ -183,31 +295,18 @@ export default function CustomerAccountPage() {
           </div>
         </div>
 
-        {/* Section 4: Saved Delivery Addresses */}
-        <div className="bg-white rounded-3xl p-6 border border-homatri-border shadow-xs space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <MapPin className="w-5 h-5 text-homatri-orange" />
-              <h2 className="font-display font-medium text-lg text-homatri-dark">Saved Delivery Addresses</h2>
-            </div>
-            <button type="button" className="text-xs font-bold text-homatri-orange hover:text-homatri-orange-dark">
-              + Add New Address
-            </button>
-          </div>
-
-          <div className="p-4 rounded-2xl border border-homatri-border bg-homatri-cream/40 flex items-start justify-between">
-            <div>
-              <span className="bg-homatri-orange text-white text-[10px] font-extrabold px-2 py-0.5 rounded-md">HOME</span>
-              <p className="text-xs font-bold text-homatri-dark mt-2">Flat 402, Sector 8, Ghansoli</p>
-              <p className="text-[11px] text-homatri-muted mt-0.5">Navi Mumbai, Maharashtra — 400701</p>
-            </div>
-            <button type="button" className="text-xs font-bold text-homatri-muted hover:text-homatri-dark">
-              Edit
-            </button>
-          </div>
-        </div>
-
       </main>
+
+      {/* Address Selection / Creation Drawer */}
+      <DeliveryAddressModal
+        isOpen={isAddressModalOpen}
+        onClose={() => setIsAddressModalOpen(false)}
+        onSaveAddress={(newAddr) => {
+          const next = [normalizeAddress(newAddr), ...savedAddresses.filter((a) => a.id !== newAddr.id)];
+          setSavedAddresses(next);
+          window.localStorage.setItem("homatri_saved_addresses", JSON.stringify(next));
+        }}
+      />
     </div>
   );
 }

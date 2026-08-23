@@ -96,8 +96,41 @@ export async function submitRiderOnboarding(body, token) {
   return apiRequest("/api/v1/auth/onboarding/rider", { method: "POST", token, body });
 }
 
+export function normalizeAddress(addr) {
+  if (!addr) return null;
+  const flatNo = addr.flatNo || addr.flat_no || "";
+  const streetAddress = addr.streetAddress || addr.street_address || "";
+  const landmark = addr.landmark || "";
+  const cluster = addr.cluster || "Ghansoli";
+  const addressType = (addr.addressType || addr.address_type || "HOME").toUpperCase();
+  const phone = addr.phone || "7416767453";
+  const fullAddress =
+    addr.fullAddress ||
+    addr.full_address ||
+    `${flatNo}, ${streetAddress}${landmark ? `, Near ${landmark}` : ""}, ${cluster}`;
+
+  return {
+    id: addr.id || `addr_${Date.now()}`,
+    addressType,
+    address_type: addressType,
+    flatNo,
+    flat_no: flatNo,
+    streetAddress,
+    street_address: streetAddress,
+    landmark,
+    fullAddress,
+    full_address: fullAddress,
+    phone,
+    cluster,
+    latitude: addr.latitude || 19.1234,
+    longitude: addr.longitude || 73.0123,
+    is_default: addr.is_default || false,
+  };
+}
+
 export async function fetchSavedAddresses(token) {
-  return apiRequest("/api/v1/customer/addresses", { token });
+  const raw = await apiRequest("/api/v1/customer/addresses", { token });
+  return Array.isArray(raw) ? raw.map(normalizeAddress) : [];
 }
 
 export async function saveCustomerAddress(body, token) {
