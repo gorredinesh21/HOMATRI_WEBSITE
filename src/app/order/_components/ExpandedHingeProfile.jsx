@@ -98,6 +98,14 @@ export default function ExpandedHingeProfile({ chef, onClose, onOrderItem, onFol
                 </span>
               ))}
             </div>
+            <div className="mt-4 pt-3 border-t border-slate-100">
+              <a
+                href={`/bulk?chef=${encodeURIComponent(chef.chefName || chef.kitchenName)}`}
+                className="block w-full bg-slate-900 hover:bg-black text-white font-bold text-xs py-3 px-4 rounded-2xl text-center shadow-sm uppercase tracking-wider"
+              >
+                📦 Request Bulk Catering from {chef.chefName} ➔
+              </a>
+            </div>
           </section>
 
           <section className="space-y-3">
