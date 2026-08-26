@@ -3,7 +3,9 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import {
   googleLogin,
+  loginUser,
   refreshAuthSession,
+  registerUser,
   requestOtp as requestOtpApi,
   verifyMsg91Widget,
   verifyOtp as verifyOtpApi,
@@ -146,6 +148,42 @@ export function AuthProvider({ children }) {
     [applySession]
   );
 
+  const registerWithPassword = useCallback(
+    async ({ phone, email, password, fullName }) => {
+      setIsLoading(true);
+      setOtpError(null);
+      try {
+        const result = await registerUser({ phone, email, password, fullName });
+        return applySession(result, phone);
+      } catch (error) {
+        setStatus("ERROR");
+        setOtpError(error?.message || "Registration failed. Please check details.");
+        throw error;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [applySession]
+  );
+
+  const loginWithPassword = useCallback(
+    async ({ phone, password }) => {
+      setIsLoading(true);
+      setOtpError(null);
+      try {
+        const result = await loginUser({ phone, password });
+        return applySession(result, phone);
+      } catch (error) {
+        setStatus("ERROR");
+        setOtpError(error?.message || "Log in failed. Invalid phone or password.");
+        throw error;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [applySession]
+  );
+
   const completeGoogleAuth = useCallback(
     async ({ idToken, avatarUrl, isCartoonAvatar }) => {
       setIsLoading(true);
@@ -215,6 +253,8 @@ export function AuthProvider({ children }) {
       setIsAuthModalOpen,
       requestOtp,
       verifyOtp,
+      registerWithPassword,
+      loginWithPassword,
       completeMsg91Auth,
       completeGoogleAuth,
       logout,

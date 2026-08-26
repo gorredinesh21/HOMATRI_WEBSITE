@@ -49,6 +49,20 @@ export function orderStreamUrl(orderId) {
   return `${API_BASE_URL}/api/v1/orders/${orderId}/stream`;
 }
 
+export async function registerUser({ phone, email, password, fullName }) {
+  return apiRequest("/api/v1/auth/register", {
+    method: "POST",
+    body: { phone, email, password, full_name: fullName },
+  });
+}
+
+export async function loginUser({ phone, password }) {
+  return apiRequest("/api/v1/auth/login", {
+    method: "POST",
+    body: { phone, password },
+  });
+}
+
 export async function requestOtp(phone) {
   return apiRequest("/api/v1/auth/otp/request", {
     method: "POST",
