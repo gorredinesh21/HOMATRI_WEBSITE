@@ -119,13 +119,21 @@ export default function SwipeCardDeck({
                     </span>
                   )}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => onCardOpen?.(kitchen.chefId)}
-                  className="w-full bg-homatri-orange hover:bg-homatri-orange-dark text-white font-bold py-3 rounded-xl"
-                >
-                  Open profile & menu
-                </button>
+                <div className="space-y-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => onCardOpen?.(kitchen.chefId)}
+                    className="w-full bg-homatri-orange hover:bg-homatri-orange-dark text-white font-bold py-3 rounded-xl text-sm"
+                  >
+                    Open profile & menu
+                  </button>
+                  <a
+                    href={`/bulk?chef=${encodeURIComponent(kitchen.chefName || kitchen.kitchenName)}`}
+                    className="block w-full bg-slate-900 hover:bg-black text-white font-bold py-2.5 rounded-xl text-xs text-center uppercase tracking-wider"
+                  >
+                    📦 Request Bulk Catering from {kitchen.chefName || "Chef"} ➔
+                  </a>
+                </div>
               </div>
             </article>
           );
