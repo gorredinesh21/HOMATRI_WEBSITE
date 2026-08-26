@@ -175,14 +175,6 @@ export default function OrderPortalPage() {
             cuisine={cuisine}
             onCuisineChange={setCuisine}
           />
-          <div className="max-w-md mx-auto">
-            <a
-              href="/bulk"
-              className="block w-full bg-slate-900 hover:bg-black text-white font-bold text-xs py-3 px-4 rounded-2xl text-center shadow-md border border-slate-700 transition"
-            >
-              📦 Request Bulk Catering for Events (10–500 Guests) ➔
-            </a>
-          </div>
           <SwipeCardDeck
             kitchens={filtered}
             activeIndex={Math.min(activeIndex, Math.max(0, filtered.length - 1))}
