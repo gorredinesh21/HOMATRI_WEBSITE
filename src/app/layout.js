@@ -5,6 +5,7 @@ import { CartProvider } from "@/context/CartContext";
 import { AuthProvider } from "@/context/AuthContext";
 import AppProviders from "@/app/providers";
 import GlobalOverlays from "@/components/GlobalOverlays";
+import WhatsAppBanner from "@/app/_components/WhatsAppBanner";
 import "./globals.css";
 
 const figtree = Figtree({
@@ -35,6 +36,7 @@ export default function RootLayout({ children }) {
           <AuthProvider>
             <LocationProvider>
               <CartProvider>
+                <WhatsAppBanner />
                 {children}
                 <GlobalOverlays />
               </CartProvider>
