@@ -17,7 +17,7 @@ export default function WhatsAppBanner() {
   };
 
   return (
-    <div className="relative z-50 bg-gradient-to-r from-emerald-600 via-emerald-500 to-green-600 text-white shadow-md">
+    <div className="sticky top-0 z-[60] bg-gradient-to-r from-emerald-600 via-emerald-500 to-green-600 text-white shadow-md">
       <div className="max-w-7xl mx-auto px-4 py-2.5 sm:px-6 lg:px-8 flex items-center justify-between gap-3 text-xs sm:text-sm font-semibold">
         
         {/* Left Side Pill & Text */}
