@@ -149,6 +149,20 @@ export default function OrderPortalPage() {
   const onNext = () => setActiveIndex((index) => Math.min(filtered.length - 1, index + 1));
   const onPrevious = () => setActiveIndex((index) => Math.max(0, index - 1));
 
+  const [followingMap, setFollowingMap] = useState({});
+
+  const handleFollowChef = useCallback(
+    (chefId) => {
+      guard(() => {
+        setFollowingMap((prev) => ({
+          ...prev,
+          [chefId]: !prev[chefId],
+        }));
+      });
+    },
+    [guard]
+  );
+
   return (
     <div className="min-h-screen bg-homatri-cream">
       <DualTabHeader
@@ -205,7 +219,7 @@ export default function OrderPortalPage() {
               setCommentOpen(true);
             })
           }
-          onFollow={() => guard(() => {})}
+          onFollow={(chefId) => handleFollowChef(chefId || reels[activeReelIndex]?.chefId)}
           onOrderDish={handleOrderDishFromReel}
         />
       )}
@@ -213,9 +227,10 @@ export default function OrderPortalPage() {
       {selectedChef ? (
         <ExpandedHingeProfile
           chef={selectedChef}
+          isFollowing={Boolean(followingMap[selectedChef.chefId])}
           onClose={() => setOpenChefId(null)}
           onOrderItem={handleOrderItem}
-          onFollow={() => guard(() => {})}
+          onFollow={() => handleFollowChef(selectedChef.chefId)}
         />
       ) : null}
 
