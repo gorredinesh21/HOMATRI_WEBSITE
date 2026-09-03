@@ -1,7 +1,7 @@
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ||
   process.env.NEXT_PUBLIC_BACKEND_URL ||
-  "https://homatri-backend-195132182954.us-central1.run.app";
+  "https://api.homatri.com";
 
 export const DELIVERY_FEE_DISPLAY = 30;
 

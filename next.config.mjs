@@ -1,5 +1,9 @@
 /** @type {import('next').NextConfig} */
+const BACKEND_ORIGIN =
+  process.env.BACKEND_ORIGIN || "https://homatri-backend-195132182954.us-central1.run.app";
+
 const nextConfig = {
+  output: "standalone",
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "images.unsplash.com" },
@@ -10,7 +14,7 @@ const nextConfig = {
     return [
       {
         source: "/homatri-api/:path*",
-        destination: "https://homatri-backend-195132182954.us-central1.run.app/:path*",
+        destination: `${BACKEND_ORIGIN}/:path*`,
       },
     ];
   },
