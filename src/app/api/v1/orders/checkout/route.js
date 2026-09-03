@@ -8,7 +8,7 @@ export async function POST(request) {
     const backendUrl =
       process.env.NEXT_PUBLIC_API_BASE_URL ||
       process.env.NEXT_PUBLIC_BACKEND_URL ||
-      "https://homatri-backend-195132182954.us-central1.run.app";
+      "https://api.homatri.com";
 
     const response = await fetch(`${backendUrl}/api/v1/orders/checkout`, {
       method: "POST",
