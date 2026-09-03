@@ -179,12 +179,36 @@ export async function checkoutOrder(payload, token) {
   });
 }
 
+export async function verifyOrderPayment(orderId, token) {
+  return apiRequest(`/api/v1/orders/${orderId}/verify-payment`, {
+    method: "POST",
+    token,
+    body: { simulate: true },
+  });
+}
+
+export async function submitDietaryRequest(orderId, note, token) {
+  return apiRequest(`/api/v1/orders/${orderId}/dietary-request`, {
+    method: "POST",
+    token,
+    body: { note },
+  });
+}
+
+export async function respondDietaryRequest(requestId, action, counterOffer, token) {
+  return apiRequest(`/api/v1/chef/me/dietary/${requestId}/respond`, {
+    method: "POST",
+    token,
+    body: { action, ...(counterOffer ? { counter_offer: counterOffer } : {}) },
+  });
+}
+
 export async function fetchPublicChefs() {
-  return apiRequest("/api/v1/chefs");
+  return apiRequest("/api/v1/kitchens");
 }
 
 export async function fetchPublicReels() {
-  return apiRequest("/api/v1/reels");
+  return apiRequest("/api/v1/reels/feed");
 }
 
 export async function fetchOrder(orderId, token) {
@@ -211,11 +235,96 @@ export async function uploadChefReel(formData, token) {
   return data;
 }
 
-export function riderLocationWsUrl() {
+export function riderLocationWsUrl(token) {
   const http = API_BASE_URL.replace(/\/$/, "");
   const ws = http.startsWith("https://")
     ? http.replace(/^https:\/\//, "wss://")
     : http.replace(/^http:\/\//, "ws://");
-  return `${ws}/ws/v1/rider/location`;
+  const q = token ? `?token=${encodeURIComponent(token)}` : "";
+  return `${ws}/ws/v1/rider/location${q}`;
+}
+
+export async function fetchKitchens({ cluster, mealWindow } = {}) {
+  const params = new URLSearchParams();
+  if (cluster) params.set("cluster", cluster);
+  if (mealWindow) params.set("meal_window", mealWindow);
+  const suffix = params.toString() ? `?${params}` : "";
+  return apiRequest(`/api/v1/kitchens${suffix}`);
+}
+
+export async function fetchMyOrders(token) {
+  return apiRequest("/api/v1/orders/mine", { token });
+}
+
+export async function submitOrderReview(orderId, body, token) {
+  return apiRequest(`/api/v1/orders/${orderId}/review`, { method: "POST", token, body });
+}
+
+export async function fetchChefDashboard(token) {
+  return apiRequest("/api/v1/chef/me", { token });
+}
+
+export async function chefSetAccepting(accepting, token) {
+  return apiRequest("/api/v1/chef/me/accepting", { method: "POST", token, body: { accepting } });
+}
+
+export async function chefPauseKitchen(token) {
+  return apiRequest("/api/v1/chef/me/pause", { method: "POST", token });
+}
+
+export async function chefLockBatch(token) {
+  return apiRequest("/api/v1/chef/me/lock-batch", { method: "POST", token });
+}
+
+export async function chefMarkPacked(token) {
+  return apiRequest("/api/v1/chef/me/packed", { method: "POST", token });
+}
+
+export async function chefCreateMenu(body, token) {
+  return apiRequest("/api/v1/chef/me/menu", { method: "POST", token, body });
+}
+
+export async function chefPatchMenu(menuItemId, body, token) {
+  return apiRequest(`/api/v1/chef/me/menu/${menuItemId}`, { method: "PATCH", token, body });
+}
+
+export async function chefToggleStock(menuItemId, token) {
+  return apiRequest(`/api/v1/chef/me/menu/${menuItemId}/stock`, { method: "PATCH", token });
+}
+
+export async function chefPatchKitchen(body, token) {
+  return apiRequest("/api/v1/chef/me/kitchen", { method: "PATCH", token, body });
+}
+
+export async function fetchRiderTrip(token) {
+  return apiRequest("/api/v1/rider/me/trip", { token });
+}
+
+export async function riderSetShift(on, token) {
+  return apiRequest("/api/v1/rider/me/shift", { method: "POST", token, body: { on } });
+}
+
+export async function riderConfirmPickup(token) {
+  return apiRequest("/api/v1/rider/me/pickup", { method: "POST", token });
+}
+
+export async function riderDeliver(orderId, otp, token) {
+  return apiRequest("/api/v1/rider/me/deliver", { method: "POST", token, body: { order_id: orderId, otp } });
+}
+
+export async function riderConfirmGate(deliveries, token) {
+  return apiRequest("/api/v1/rider/me/confirm-gate", { method: "POST", token, body: { deliveries } });
+}
+
+export async function riderUndelivered(orderId, reason, token) {
+  return apiRequest("/api/v1/rider/me/undelivered", { method: "POST", token, body: { order_id: orderId, reason } });
+}
+
+export async function riderReport(kind, token, orderId) {
+  return apiRequest("/api/v1/rider/me/report", { method: "POST", token, body: { kind, order_id: orderId } });
+}
+
+export async function riderSos(token) {
+  return apiRequest("/api/v1/rider/me/sos", { method: "POST", token });
 }
 

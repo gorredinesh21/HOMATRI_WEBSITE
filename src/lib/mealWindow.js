@@ -16,9 +16,7 @@ export function getActiveMealWindow(now = new Date()) {
       mealWindow: "DINNER",
       cutoffTime: "6:30 PM",
       label: "DINNER · 6:30 PM cutoff",
-      isPastCutoff: minutes >= lunchCutoff && now.getHours() >= 12 && minutes < dinnerCutoff
-        ? false
-        : false,
+      isPastCutoff: false,
     };
   }
   return {

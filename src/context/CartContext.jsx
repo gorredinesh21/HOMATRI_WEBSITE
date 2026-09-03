@@ -1,28 +1,10 @@
 "use client";
 
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from "react";
-import { checkoutOrder, DELIVERY_FEE_DISPLAY } from "@/lib/api";
+import { checkoutOrder, verifyOrderPayment, DELIVERY_FEE_DISPLAY } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
 const CartContext = createContext(null);
-
-function loadRazorpay() {
-  return new Promise((resolve, reject) => {
-    if (typeof window === "undefined") {
-      reject(new Error("Razorpay is browser-only"));
-      return;
-    }
-    if (window.Razorpay) {
-      resolve(window.Razorpay);
-      return;
-    }
-    const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.onload = () => resolve(window.Razorpay);
-    script.onerror = () => reject(new Error("Unable to load Razorpay checkout."));
-    document.body.appendChild(script);
-  });
-}
 
 export function CartProvider({ children }) {
   const { token, customerPhone, requireAuthentication, isAuthenticated } = useAuth();
@@ -32,6 +14,9 @@ export function CartProvider({ children }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const [paymentMethod, setPaymentMethodState] = useState("COD");
+  const [pendingPayment, setPendingPayment] = useState(null);
+  const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
   const pendingCheckout = useRef(false);
 
   const deliveryFee = items.length > 0 ? DELIVERY_FEE_DISPLAY : 0;
@@ -131,6 +116,14 @@ export function CartProvider({ children }) {
     setError(null);
   }, []);
 
+  const setPaymentMethod = useCallback((method) => {
+    if (method === "COD" || method === "RAZORPAY") setPaymentMethodState(method);
+  }, []);
+
+  const routeToTracking = (orderId) => {
+    window.location.href = `/order/tracking?order_id=${encodeURIComponent(orderId)}`;
+  };
+
   const beginCheckout = useCallback(async () => {
     if (!items.length) {
       setError("Your cart is empty.");
@@ -152,6 +145,7 @@ export function CartProvider({ children }) {
     const payload = {
       meal_window: mealWindow,
       dietary_notes: customNotes || null,
+      payment_method: paymentMethod,
       items: items.map((item) => ({
         menu_item_id: item.menuItemId,
         chef_id: item.chefId,
@@ -162,18 +156,23 @@ export function CartProvider({ children }) {
 
     try {
       const result = await checkoutOrder(payload, token);
-      const orderId = result?.order_id || result?.id || `ORD-${Date.now()}`;
-      const amountPaise = result?.amount || total * 100;
-      const amountRupees = (amountPaise / 100).toFixed(2);
+      const orderId = result?.order_id;
+      if (!orderId) throw new Error("Checkout did not return an order id.");
+
+      if (result?.order_status === "PENDING_PAYMENT" || result?.payment_method === "RAZORPAY") {
+        clearCart();
+        setPendingPayment({
+          orderId,
+          orderTotal: result?.payment?.order_total_rupees ?? total,
+          tokenAmount: result?.payment?.amount_rupees ?? 1,
+          paymentLinkUrl: result?.payment?.payment_link_url || null,
+        });
+        return result;
+      }
 
       clearCart();
       closeCart();
-
-      // Full page navigation to dedicated Payment Page (Zero Popup Blockers!)
-      window.location.href = `/order/payment?order_id=${encodeURIComponent(orderId)}&amount=${encodeURIComponent(amountRupees)}`;
-      return result;
-
-      setError("Checkout started, but the payment session was incomplete. Please retry.");
+      routeToTracking(orderId);
       return result;
     } catch (err) {
       setError(err?.message || "Checkout failed. The server recalculates totals — please retry.");
@@ -187,11 +186,32 @@ export function CartProvider({ children }) {
     requireAuthentication,
     mealWindow,
     customNotes,
+    paymentMethod,
     token,
     customerPhone,
+    total,
     clearCart,
     closeCart,
   ]);
+
+  const confirmPayment = useCallback(async () => {
+    if (!pendingPayment?.orderId) return;
+    setIsVerifyingPayment(true);
+    setError(null);
+    try {
+      await verifyOrderPayment(pendingPayment.orderId, token);
+      const orderId = pendingPayment.orderId;
+      setPendingPayment(null);
+      closeCart();
+      routeToTracking(orderId);
+    } catch (err) {
+      setError(err?.message || "Payment verification failed. Please try again.");
+    } finally {
+      setIsVerifyingPayment(false);
+    }
+  }, [pendingPayment, token, closeCart]);
+
+  const dismissPendingPayment = useCallback(() => setPendingPayment(null), []);
 
   const value = useMemo(
     () => ({
@@ -206,6 +226,12 @@ export function CartProvider({ children }) {
       isOpen,
       isSubmitting,
       error,
+      paymentMethod,
+      setPaymentMethod,
+      pendingPayment,
+      isVerifyingPayment,
+      confirmPayment,
+      dismissPendingPayment,
       addItem,
       addToCart: addItem,
       removeItem,
@@ -229,6 +255,12 @@ export function CartProvider({ children }) {
       isOpen,
       isSubmitting,
       error,
+      paymentMethod,
+      setPaymentMethod,
+      pendingPayment,
+      isVerifyingPayment,
+      confirmPayment,
+      dismissPendingPayment,
       addItem,
       removeItem,
       updateQuantity,

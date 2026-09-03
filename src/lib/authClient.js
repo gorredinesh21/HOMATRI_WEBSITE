@@ -5,15 +5,9 @@ export const CARTOON_AVATARS = [
   { id: "avatar_spices_cartoon_4.png", label: "Spices", emoji: "🌶️" },
 ];
 
-export const MSG91_WIDGET_ID =
-  process.env.NEXT_PUBLIC_MSG91_WIDGET_ID ||
-  process.env.NEXT_PUBLIC_MSG91_WIDGET_ID ||
-  "";
+export const MSG91_WIDGET_ID = process.env.NEXT_PUBLIC_MSG91_WIDGET_ID || "";
 
-export const MSG91_WIDGET_TOKEN =
-  process.env.NEXT_PUBLIC_MSG91_WIDGET_TOKEN ||
-  process.env.NEXT_PUBLIC_MSG91_WIDGET_TOKEN ||
-  "";
+export const MSG91_WIDGET_TOKEN = process.env.NEXT_PUBLIC_MSG91_WIDGET_TOKEN || "";
 
 export const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
 

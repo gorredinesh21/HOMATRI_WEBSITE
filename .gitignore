@@ -28,3 +28,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.to
+
+# local secrets / real-personal data — do not commit
+send_otp.js
+Homaatri*Chef*Onboarding*Form_Submissions*.csv

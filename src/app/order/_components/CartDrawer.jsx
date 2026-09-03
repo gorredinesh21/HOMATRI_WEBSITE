@@ -16,8 +16,23 @@ export default function CartDrawer({
   canCheckout,
   checkoutError,
 }) {
-  const { items, mealWindow, subtotal, total, customNotes, setCustomNotes, updateQuantity, updateItemNote, isSubmitting } =
-    useCart();
+  const {
+    items,
+    mealWindow,
+    subtotal,
+    total,
+    customNotes,
+    setCustomNotes,
+    updateQuantity,
+    updateItemNote,
+    isSubmitting,
+    paymentMethod,
+    setPaymentMethod,
+    pendingPayment,
+    isVerifyingPayment,
+    confirmPayment,
+    dismissPendingPayment,
+  } = useCart();
   const { isAuthenticated, customerPhone, user } = useAuth();
   
   const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
@@ -41,7 +56,7 @@ export default function CartDrawer({
     return () => window.removeEventListener("keydown", onKey);
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen && !pendingPayment) return null;
 
   const handleCheckoutClick = async () => {
     // Check 1: User Authentication
@@ -76,15 +91,71 @@ export default function CartDrawer({
           {/* Header */}
           <div className="flex items-center justify-between px-5 py-4 border-b border-homatri-border">
             <div>
-              <h2 className="font-display text-xl font-medium italic text-homatri-dark">Your Tiffin Cart</h2>
+              <h2 className="font-display text-xl font-medium italic text-homatri-dark">
+                {pendingPayment ? "Complete Payment" : "Your Tiffin Cart"}
+              </h2>
               <p className="text-xs text-homatri-muted mt-0.5">
-                Meal Window: <strong>{mealWindow || "Not set"}</strong>
+                {pendingPayment ? (
+                  <span>
+                    Order <strong>{pendingPayment.orderId}</strong> awaiting payment
+                  </span>
+                ) : (
+                  <span>
+                    Meal Window: <strong>{mealWindow || "Not set"}</strong>
+                  </span>
+                )}
               </p>
             </div>
-            <button type="button" onClick={onClose} aria-label="Close">
+            <button
+              type="button"
+              onClick={pendingPayment ? dismissPendingPayment : onClose}
+              aria-label="Close"
+            >
               <X className="w-5 h-5 text-homatri-muted hover:text-homatri-dark" />
             </button>
           </div>
+
+          {pendingPayment ? (
+            <div className="flex-1 overflow-y-auto px-5 py-6">
+              <div className="bg-white border border-homatri-border rounded-2xl p-5 space-y-4 text-center shadow-2xs">
+                <span className="inline-block bg-amber-100 text-amber-800 text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider">
+                  Test mode · ₹1 token payment
+                </span>
+                <div className="space-y-1.5 text-left bg-homatri-cream border border-homatri-border rounded-2xl p-4">
+                  <div className="flex justify-between text-xs text-homatri-muted">
+                    <span>Order total</span>
+                    <span className="font-bold text-homatri-dark">₹{pendingPayment.orderTotal}</span>
+                  </div>
+                  <div className="flex justify-between text-xs text-homatri-muted">
+                    <span>Pay now (token)</span>
+                    <span className="font-bold text-homatri-green">₹{pendingPayment.tokenAmount}</span>
+                  </div>
+                  <p className="text-[10px] text-homatri-muted pt-2 border-t border-homatri-border">
+                    Only ₹{pendingPayment.tokenAmount} is charged now to confirm the order. The remaining balance is
+                    collected with the tiffin delivery.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  disabled={isVerifyingPayment}
+                  onClick={confirmPayment}
+                  className="w-full bg-homatri-orange hover:bg-homatri-orange-dark text-white font-bold py-3.5 rounded-xl shadow-md transition-all text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  <ShieldCheck className="w-4 h-4" />
+                  {isVerifyingPayment ? "Verifying payment…" : `Pay ₹${pendingPayment.tokenAmount} Securely`}
+                </button>
+                <button
+                  type="button"
+                  onClick={dismissPendingPayment}
+                  className="text-xs font-bold text-homatri-orange hover:text-homatri-orange-dark"
+                >
+                  Pay later from order tracking
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+
 
           {/* Cart Items List */}
           <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
@@ -196,6 +267,38 @@ export default function CartDrawer({
           {/* Footer Checkout Summary */}
           {items.length > 0 && (
             <div className="border-t border-homatri-border p-5 space-y-2.5 bg-white">
+              {/* Payment Method Selector (Swiggy/Zomato style) */}
+              <div className="space-y-2">
+                <p className="text-xs font-extrabold text-homatri-dark">Payment Method</p>
+                {[
+                  { id: "COD", label: "💵 Cash on Delivery", hint: "Pay the rider in cash when your tiffin arrives" },
+                  { id: "RAZORPAY", label: "🔒 Pay Online (Razorpay)", hint: "Test mode: pay ₹1 token now to confirm" },
+                ].map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => setPaymentMethod(option.id)}
+                    className={`w-full flex items-start gap-3 p-3 rounded-2xl border text-left transition-colors ${
+                      paymentMethod === option.id
+                        ? "border-homatri-orange bg-homatri-orange-light"
+                        : "border-homatri-border bg-white hover:bg-homatri-cream"
+                    }`}
+                  >
+                    <span
+                      className={`mt-0.5 w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${
+                        paymentMethod === option.id ? "border-homatri-orange" : "border-homatri-border"
+                      }`}
+                    >
+                      {paymentMethod === option.id ? <span className="w-2 h-2 rounded-full bg-homatri-orange" /> : null}
+                    </span>
+                    <span>
+                      <span className="block text-xs font-bold text-homatri-dark">{option.label}</span>
+                      <span className="block text-[10px] text-homatri-muted mt-0.5">{option.hint}</span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+
               <div className="flex justify-between text-xs text-homatri-muted">
                 <span>Items Subtotal</span>
                 <span className="font-semibold text-homatri-dark">₹{subtotal}</span>
@@ -224,12 +327,15 @@ export default function CartDrawer({
                 {!isAuthenticated
                   ? "Sign In to Checkout"
                   : !savedAddress
-                  ? "Add Address & Pay"
+                  ? "Add Address & Continue"
+                  : paymentMethod === "COD"
+                  ? `Place Order (Pay ₹${total} on Delivery)`
                   : `Proceed to Pay (₹${total})`}
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
           )}
+        </>)}
         </aside>
       </div>
 

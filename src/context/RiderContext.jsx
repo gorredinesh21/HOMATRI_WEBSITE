@@ -1,157 +1,175 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { riderLocationWsUrl } from "@/lib/api";
-import { getActiveMealWindow } from "@/lib/mealWindow";
+import { useAuth } from "@/context/AuthContext";
 import {
-  ASSIGNED_KITCHEN,
-  INITIAL_STOPS,
-  RIDER_PROFILE,
-  groupPendingStops,
-} from "@/lib/riderTrip";
+  fetchRiderTrip,
+  riderConfirmGate,
+  riderConfirmPickup,
+  riderDeliver,
+  riderLocationWsUrl,
+  riderReport,
+  riderSetShift,
+  riderSos,
+  riderUndelivered,
+} from "@/lib/api";
+import { groupPendingStops } from "@/lib/riderTrip";
 
 const RiderContext = createContext(null);
 
 export function RiderProvider({ children }) {
-  const windowInfo = getActiveMealWindow();
-  const [shiftStatus, setShiftStatus] = useState("OFF_SHIFT");
-  const [stops, setStops] = useState(INITIAL_STOPS);
+  const { token } = useAuth();
+  const [trip, setTrip] = useState(null);
   const [helpNotice, setHelpNotice] = useState(null);
   const [lastGpsAt, setLastGpsAt] = useState(null);
   const socketRef = useRef(null);
-  const gpsTimerRef = useRef(null);
 
-  const pendingStops = useMemo(() => stops.filter((stop) => stop.status === "PENDING"), [stops]);
-  const currentGroup = useMemo(() => groupPendingStops(stops), [stops]);
-  const remainingStops = useMemo(() => {
-    const gates = new Set(pendingStops.map((stop) => stop.gateId));
-    return gates.size;
-  }, [pendingStops]);
-  const tiffinCount = stops.reduce((sum, stop) => sum + stop.tiffinCount, 0);
-
-  const [pickupDone, setPickupDone] = useState(false);
-
-  const machineState = useMemo(() => {
-    if (shiftStatus === "OFF_SHIFT") return "OFF_SHIFT";
-    if (!pickupDone) return "ASSIGNED_BATCH";
-    if (pendingStops.length === 0) return "BATCH_COMPLETED";
-    return "DELIVERIES_IN_PROGRESS";
-  }, [shiftStatus, pickupDone, pendingStops.length]);
-
-  const toggleShift = useCallback(() => {
-    if (shiftStatus !== "OFF_SHIFT") {
-      if (machineState === "DELIVERIES_IN_PROGRESS" || machineState === "ASSIGNED_BATCH") {
-        setHelpNotice("Finish or wait for reassignment before going off shift.");
-        return;
-      }
-      setShiftStatus("OFF_SHIFT");
-      setPickupDone(false);
-      setStops(INITIAL_STOPS);
+  const refresh = useCallback(async () => {
+    if (!token) {
+      setTrip(null);
       return;
     }
-    setShiftStatus("ON_SHIFT");
-    setHelpNotice(null);
-  }, [shiftStatus, machineState]);
-
-  const confirmPickup = useCallback(async () => {
-    setPickupDone(true);
-    setHelpNotice("Pickup confirmed. Orders are PICKED_UP_BY_DRIVER. Leg 1 is open.");
-  }, []);
-
-  const markDelivered = useCallback(async (orderId) => {
-    setStops((prev) =>
-      prev.map((stop) => (stop.orderId === orderId ? { ...stop, status: "DELIVERED" } : stop))
-    );
-  }, []);
-
-  const confirmAllAtGate = useCallback(async (orderIds) => {
-    setStops((prev) =>
-      prev.map((stop) =>
-        orderIds.includes(stop.orderId) && stop.status === "PENDING"
-          ? { ...stop, status: "DELIVERED" }
-          : stop
-      )
-    );
-  }, []);
-
-  const markUndelivered = useCallback(async (orderId, reason) => {
-    setStops((prev) =>
-      prev.map((stop) =>
-        stop.orderId === orderId ? { ...stop, status: "UNDELIVERED", undeliveredReason: reason } : stop
-      )
-    );
-  }, []);
-
-  const reportKitchenDelay = useCallback(async () => {
-    setHelpNotice("Master agent notified: kitchen delay. Customers will get a WhatsApp update.");
-  }, []);
-
-  const reportAddressIssue = useCallback(async () => {
-    setHelpNotice("Master agent notified: address issue. A location pin will be requested from the customer.");
-  }, []);
+    const data = await fetchRiderTrip(token);
+    setTrip(data);
+    if (data?.gps?.timestamp) setLastGpsAt(data.gps.timestamp);
+  }, [token]);
 
   useEffect(() => {
-    if (shiftStatus !== "ON_SHIFT") {
+    refresh().catch((err) => setHelpNotice(err.message));
+    const id = setInterval(() => refresh().catch(() => {}), 8000);
+    return () => clearInterval(id);
+  }, [refresh]);
+
+  const shiftOn = Boolean(trip?.shift_on);
+  const stops = trip?.stops || [];
+  const currentGroup = groupPendingStops(
+    stops.map((s) => ({
+      ...s,
+      orderId: s.orderId,
+      gateId: s.gateId,
+      status: s.status,
+      tiffinCount: s.tiffinCount,
+    }))
+  );
+  const pendingStops = stops.filter((s) => s.status === "PENDING");
+  const remainingStops = new Set(pendingStops.map((s) => s.gateId)).size;
+  const tiffinCount = trip?.tiffinCount || 0;
+  const machineState = trip?.machineState || (shiftOn ? "ON_SHIFT" : "OFF_SHIFT");
+  const pickupDone = Boolean(trip?.pickupDone);
+  const windowInfo = trip?.windowInfo || { label: "", mealWindow: "LUNCH", cutoffTime: "" };
+
+  const toggleShift = useCallback(async () => {
+    try {
+      const data = await riderSetShift(!shiftOn, token);
+      setTrip(data);
+      setHelpNotice(null);
+    } catch (err) {
+      setHelpNotice(err.message);
+    }
+  }, [shiftOn, token]);
+
+  const confirmPickup = useCallback(async () => {
+    const data = await riderConfirmPickup(token);
+    setTrip(data);
+    setHelpNotice("Pickup confirmed.");
+  }, [token]);
+
+  const markDelivered = useCallback(
+    async (orderId, otp) => {
+      const pin = otp || window.prompt("Customer delivery PIN");
+      if (!pin) return;
+      const data = await riderDeliver(orderId, pin, token);
+      setTrip(data);
+    },
+    [token]
+  );
+
+  const confirmAllAtGate = useCallback(
+    async (orderIds) => {
+      const deliveries = [];
+      for (const orderId of orderIds) {
+        const pin = window.prompt(`PIN for ${orderId}`);
+        if (!pin) return;
+        deliveries.push({ order_id: orderId, otp: pin });
+      }
+      const data = await riderConfirmGate(deliveries, token);
+      setTrip(data);
+    },
+    [token]
+  );
+
+  const markUndelivered = useCallback(
+    async (orderId, reason) => {
+      const data = await riderUndelivered(orderId, reason || "Customer not available", token);
+      setTrip(data);
+    },
+    [token]
+  );
+
+  const reportKitchenDelay = useCallback(async () => {
+    const res = await riderReport("kitchen_delay", token);
+    setHelpNotice(res.notice);
+  }, [token]);
+
+  const reportAddressIssue = useCallback(async () => {
+    const res = await riderReport("address_issue", token);
+    setHelpNotice(res.notice);
+  }, [token]);
+
+  const sos = useCallback(async () => {
+    const res = await riderSos(token);
+    setHelpNotice(res.notice);
+  }, [token]);
+
+  useEffect(() => {
+    if (!token || !shiftOn) {
       socketRef.current?.close();
       socketRef.current = null;
-      if (gpsTimerRef.current) clearInterval(gpsTimerRef.current);
       return undefined;
     }
-
-    try {
-      socketRef.current = new WebSocket(riderLocationWsUrl());
-    } catch {
-      socketRef.current = null;
-    }
-
-    const sendFix = (coords) => {
-      const payload = {
-        action: "update_location",
-        rider_id: RIDER_PROFILE.riderId,
-        latitude: coords.latitude,
-        longitude: coords.longitude,
-        heading: coords.heading ?? 0,
-        timestamp: new Date().toISOString(),
-      };
-      setLastGpsAt(payload.timestamp);
-      if (socketRef.current?.readyState === WebSocket.OPEN) {
-        socketRef.current.send(JSON.stringify(payload));
-      }
-    };
-
+    const ws = new WebSocket(riderLocationWsUrl(token));
+    socketRef.current = ws;
     const ping = () => {
-      if (!navigator.geolocation) {
-        sendFix({ latitude: 19.123456, longitude: 73.012345, heading: 185.5 });
-        return;
-      }
+      const send = (coords) => {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(
+            JSON.stringify({
+              latitude: coords.latitude,
+              longitude: coords.longitude,
+              heading: coords.heading ?? 0,
+            })
+          );
+        }
+      };
+      if (!navigator.geolocation) return;
       navigator.geolocation.getCurrentPosition(
-        (pos) =>
-          sendFix({
-            latitude: pos.coords.latitude,
-            longitude: pos.coords.longitude,
-            heading: pos.coords.heading,
-          }),
-        () => sendFix({ latitude: 19.123456, longitude: 73.012345, heading: 185.5 }),
+        (pos) => send(pos.coords),
+        () => {},
         { maximumAge: 8000, timeout: 8000 }
       );
     };
-
-    ping();
-    gpsTimerRef.current = setInterval(ping, 10000);
-
-    return () => {
-      socketRef.current?.close();
-      socketRef.current = null;
-      if (gpsTimerRef.current) clearInterval(gpsTimerRef.current);
+    ws.onopen = ping;
+    const timer = setInterval(ping, 10000);
+    ws.onmessage = (ev) => {
+      try {
+        const msg = JSON.parse(ev.data);
+        if (msg.timestamp) setLastGpsAt(msg.timestamp);
+      } catch {
+        /* ignore */
+      }
     };
-  }, [shiftStatus]);
+    return () => {
+      clearInterval(timer);
+      ws.close();
+    };
+  }, [token, shiftOn]);
 
   const value = useMemo(
     () => ({
-      rider: RIDER_PROFILE,
-      kitchen: ASSIGNED_KITCHEN,
+      rider: trip?.rider || { fullName: "", vehicleNumber: "", phoneNumber: "" },
+      kitchen: trip?.kitchen,
       windowInfo,
-      shiftStatus,
+      shiftStatus: shiftOn ? "ON_SHIFT" : "OFF_SHIFT",
       machineState,
       pickupDone,
       stops,
@@ -167,10 +185,13 @@ export function RiderProvider({ children }) {
       markUndelivered,
       reportKitchenDelay,
       reportAddressIssue,
+      sos,
+      refresh,
     }),
     [
+      trip,
       windowInfo,
-      shiftStatus,
+      shiftOn,
       machineState,
       pickupDone,
       stops,
@@ -186,6 +207,8 @@ export function RiderProvider({ children }) {
       markUndelivered,
       reportKitchenDelay,
       reportAddressIssue,
+      sos,
+      refresh,
     ]
   );
 

@@ -12,13 +12,7 @@ import ReelFeed from "./_components/ReelFeed";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { useLocation } from "@/context/LocationContext";
-import {
-  KITCHENS,
-  filterKitchens,
-  findMenuItem,
-  getCommunityReels,
-  getKitchenById,
-} from "@/lib/catalog";
+import { filterKitchens } from "@/lib/catalog";
 import { fetchPublicChefs, fetchPublicReels } from "@/lib/api";
 
 export default function OrderPortalPage() {
@@ -28,8 +22,8 @@ export default function OrderPortalPage() {
   const { items, addItem, openCart, closeCart, isOpen, beginCheckout, deliveryFee, error, mealWindow } = useCart();
 
   const [activeTab, setActiveTab] = useState("KITCHENS");
-  const [kitchens, setKitchens] = useState(KITCHENS);
-  const [reels, setReels] = useState(getCommunityReels());
+  const [kitchens, setKitchens] = useState([]);
+  const [reels, setReels] = useState([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [openChefId, setOpenChefId] = useState(null);
   const [currentlyServing, setCurrentlyServing] = useState(false);
@@ -51,20 +45,16 @@ export default function OrderPortalPage() {
       try {
         const remote = await fetchPublicChefs();
         const list = Array.isArray(remote) ? remote : remote?.chefs || remote?.data;
-        if (!cancelled && Array.isArray(list) && list.length) {
-          setKitchens(list);
-        }
+        if (!cancelled) setKitchens(Array.isArray(list) ? list : []);
       } catch {
-        if (!cancelled) setKitchens(KITCHENS);
+        if (!cancelled) setKitchens([]);
       }
       try {
         const remoteReels = await fetchPublicReels();
         const list = Array.isArray(remoteReels) ? remoteReels : remoteReels?.reels || remoteReels?.data;
-        if (!cancelled && Array.isArray(list) && list.length) {
-          setReels(list);
-        }
+        if (!cancelled) setReels(Array.isArray(list) ? list : []);
       } catch {
-        if (!cancelled) setReels(getCommunityReels());
+        if (!cancelled) setReels([]);
       }
     })();
     return () => {
@@ -88,7 +78,7 @@ export default function OrderPortalPage() {
   }, [currentlyServing, mealFilter, dietary, cuisine, activeCluster]);
 
   const selectedChef = openChefId
-    ? getKitchenById(openChefId) || kitchens.find((kitchen) => kitchen.chefId === openChefId)
+    ? kitchens.find((kitchen) => kitchen.chefId === openChefId || kitchen.chef_phone === openChefId)
     : null;
 
   const guard = useCallback(
@@ -102,7 +92,14 @@ export default function OrderPortalPage() {
     (menuItemId, quantity, note, extras) => {
       const resolved = extras?.item && extras?.chef
         ? { item: extras.item, kitchen: extras.chef }
-        : findMenuItem(menuItemId);
+        : (() => {
+            for (const kitchen of kitchens) {
+              const all = [...(kitchen.lunchMenu || []), ...(kitchen.dinnerMenu || []), ...(kitchen.menuItems || [])];
+              const item = all.find((i) => i.menuItemId === menuItemId || i.menu_item_id === menuItemId);
+              if (item) return { item, kitchen };
+            }
+            return null;
+          })();
       if (!resolved?.item) return;
 
       const run = () => {
@@ -120,7 +117,7 @@ export default function OrderPortalPage() {
       };
       guard(run);
     },
-    [addItem, guard, mealFilter, mealWindow]
+    [addItem, guard, mealFilter, mealWindow, kitchens]
   );
 
   const handleOrderDishFromReel = useCallback(
@@ -128,8 +125,18 @@ export default function OrderPortalPage() {
       const reel = reels.find((entry) => entry.reelId === reelId);
       if (!reel) return;
       const resolved = reel.featuredMenuItemId
-        ? findMenuItem(reel.featuredMenuItemId)
-        : { item: { menuItemId: reel.reelId, itemName: reel.dishName, price: reel.dishPrice }, kitchen: { chefId: reel.chefId } };
+        ? (() => {
+            for (const kitchen of kitchens) {
+              const all = [...(kitchen.lunchMenu || []), ...(kitchen.dinnerMenu || []), ...(kitchen.menuItems || [])];
+              const item = all.find((i) => i.menuItemId === reel.featuredMenuItemId);
+              if (item) return { item, kitchen };
+            }
+            return null;
+          })()
+        : {
+            item: { menuItemId: reel.featuredMenuItemId || reel.reelId, itemName: reel.dishName, price: reel.dishPrice },
+            kitchen: { chefId: reel.chefId },
+          };
       if (!resolved?.item) return;
       guard(() => {
         addItem({
@@ -143,7 +150,7 @@ export default function OrderPortalPage() {
         });
       });
     },
-    [addItem, guard, mealWindow, reels]
+    [addItem, guard, mealWindow, reels, kitchens]
   );
 
   const onNext = () => setActiveIndex((index) => Math.min(filtered.length - 1, index + 1));

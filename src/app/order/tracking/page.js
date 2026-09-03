@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { fetchOrder, orderStreamUrl } from "@/lib/api";
+import { fetchOrder, orderStreamUrl, verifyOrderPayment } from "@/lib/api";
 
 const PIPELINE = ["PENDING_PAYMENT", "CONFIRMED", "BATCHED", "OUT_FOR_DELIVERY", "DELIVERED"];
 
@@ -34,10 +34,13 @@ export default function OrderTrackingPage() {
   const { token, requireAuthentication, isAuthenticated } = useAuth();
   const [order, setOrder] = useState(null);
   const [status, setStatus] = useState("PENDING_PAYMENT");
+  const [paymentStatus, setPaymentStatus] = useState(null);
   const [message, setMessage] = useState("Waiting for live updates…");
   const [rider, setRider] = useState(null);
   const [error, setError] = useState(null);
   const [supportOpen, setSupportOpen] = useState(false);
+  const [isCompletingPayment, setIsCompletingPayment] = useState(false);
+  const [paymentError, setPaymentError] = useState(null);
 
   useEffect(() => {
     if (!orderId) return undefined;
@@ -53,6 +56,7 @@ export default function OrderTrackingPage() {
         if (cancelled) return;
         setOrder(snapshot);
         setStatus(snapshot?.order_status || snapshot?.status || "PENDING_PAYMENT");
+        setPaymentStatus(snapshot?.payment_status || null);
       } catch (err) {
         if (!cancelled) setError(err.message);
       }
@@ -82,6 +86,7 @@ export default function OrderTrackingPage() {
             const data = payload?.data || payload;
             if (eventName === "order_status_updated" || data?.current_status) {
               if (data.current_status) setStatus(data.current_status);
+              if (data.payment_status) setPaymentStatus(data.payment_status);
               setMessage(data.message || "Status updated.");
             }
             if (eventName === "rider_assigned") {
@@ -108,6 +113,30 @@ export default function OrderTrackingPage() {
     return index === -1 ? 0 : index;
   }, [status]);
 
+  const paymentMethod = order?.payment_method || null;
+  const effectivePaymentStatus = paymentStatus || order?.payment_status || null;
+  const totalRupees = order
+    ? order.order_total_rupees ??
+      order.total_amount_rupees ??
+      (order.total_amount != null ? Number(order.total_amount) / (Number(order.total_amount) > 10000 ? 100 : 1) : null)
+    : null;
+
+  const completePayment = async () => {
+    if (!orderId) return;
+    setIsCompletingPayment(true);
+    setPaymentError(null);
+    try {
+      await verifyOrderPayment(orderId, token);
+      setPaymentStatus("PAID");
+      setStatus("CONFIRMED");
+      setMessage("Payment received. Your order is confirmed.");
+    } catch (err) {
+      setPaymentError(err?.message || "Payment verification failed. Please try again.");
+    } finally {
+      setIsCompletingPayment(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-homatri-cream">
       <header className="bg-white border-b border-homatri-border px-4 py-4">
@@ -122,7 +151,7 @@ export default function OrderTrackingPage() {
       <main className="max-w-2xl mx-auto px-4 py-8 space-y-6">
         {!orderId ? (
           <p className="text-sm text-homatri-muted">
-            No order selected. After Razorpay checkout you will land here with an <code>order_id</code>.
+            No order selected. After checkout you will land here with an <code>order_id</code>.
           </p>
         ) : null}
 
@@ -139,6 +168,31 @@ export default function OrderTrackingPage() {
             ))}
           </div>
           <p className="mt-4 text-sm text-homatri-dark">{message}</p>
+
+          {status === "PENDING_PAYMENT" || effectivePaymentStatus === "PENDING" ? (
+            <div className="mt-4 bg-amber-50 border border-amber-200 rounded-2xl p-4 space-y-3">
+              <p className="text-sm font-bold text-amber-900">
+                Payment pending — complete it to confirm your order.
+              </p>
+              {totalRupees != null ? (
+                <p className="text-xs text-amber-800">
+                  Order total ₹{Math.round(totalRupees)} · test mode: only ₹1 token is charged now.
+                </p>
+              ) : null}
+              {paymentError ? (
+                <p className="text-xs text-red-600 font-medium">{paymentError}</p>
+              ) : null}
+              <button
+                type="button"
+                disabled={isCompletingPayment}
+                onClick={completePayment}
+                className="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 rounded-xl text-sm disabled:opacity-50"
+              >
+                {isCompletingPayment ? "Verifying payment…" : "Complete payment (Pay ₹1 Securely)"}
+              </button>
+            </div>
+          ) : null}
+
           {status === "PAYMENT_FAILED" ? (
             <p className="mt-2 text-sm text-red-600">Payment failed. You can retry checkout from the cart.</p>
           ) : null}
@@ -148,6 +202,28 @@ export default function OrderTrackingPage() {
           <h2 className="font-display font-medium text-homatri-dark">Order summary</h2>
           <p className="text-sm text-homatri-muted">Order ID: {orderId || "—"}</p>
           <p className="text-sm text-homatri-muted">Meal window: {order?.meal_window || "—"}</p>
+          {paymentMethod ? (
+            <p className="text-sm">
+              <span className="inline-block bg-homatri-cream border border-homatri-border rounded-full px-3 py-1 text-xs font-bold text-homatri-dark">
+                {paymentMethod === "COD"
+                  ? `💵 Cash on Delivery — pay ₹${totalRupees != null ? Math.round(totalRupees) : "…" } to the rider`
+                  : "🔒 Paid Online"}
+              </span>{" "}
+              <span
+                className={`inline-block rounded-full px-3 py-1 text-xs font-bold ${
+                  effectivePaymentStatus === "PAID"
+                    ? "bg-emerald-100 text-emerald-800"
+                    : "bg-amber-100 text-amber-800"
+                }`}
+              >
+                {effectivePaymentStatus === "PAID"
+                  ? "Paid"
+                  : effectivePaymentStatus === "COD_PENDING"
+                  ? "Pay on delivery"
+                  : "Payment pending"}
+              </span>
+            </p>
+          ) : null}
           <p className="text-sm text-homatri-dark">
             Delivery address: {order?.delivery_address || "Saved after checkout on the server."}
           </p>
