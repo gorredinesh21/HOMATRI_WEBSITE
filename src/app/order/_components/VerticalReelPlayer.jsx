@@ -35,6 +35,7 @@ export default function VerticalReelPlayer({
   if (!reel) return null;
 
   const progress = durationSeconds ? Math.min(100, (progressSeconds / durationSeconds) * 100) : 0;
+  const canOrderDish = Boolean(reel.dishName) && (Boolean(reel.featuredMenuItemId) || reel.dishPrice != null);
 
   return (
     <div className="relative h-full w-full bg-black overflow-hidden">
@@ -76,7 +77,7 @@ export default function VerticalReelPlayer({
           <span className="w-11 h-11 rounded-full bg-white/15 flex items-center justify-center">
             <MessageCircle className="w-5 h-5" />
           </span>
-          <span className="text-[11px] font-semibold">Comment</span>
+          <span className="text-[11px] font-semibold">{reel.commentCount != null ? reel.commentCount : "Comment"}</span>
         </button>
         <button type="button" onClick={() => onFollow?.(reel.chefId)} className="flex flex-col items-center gap-1">
           <span className="w-11 h-11 rounded-full bg-white/15 flex items-center justify-center">
@@ -89,13 +90,16 @@ export default function VerticalReelPlayer({
       <div className="absolute left-4 right-20 bottom-8 text-white space-y-3">
         <p className="text-xs font-semibold uppercase tracking-wider text-white/80">{reel.kitchenName}</p>
         <h3 className="font-display text-xl font-medium leading-tight">{reel.chefName}</h3>
+        {reel.caption ? (
+          <p className="text-xs text-white/80 leading-relaxed line-clamp-2">{reel.caption}</p>
+        ) : null}
         {reel.dishName ? (
           <p className="text-sm text-white/90">
             {reel.dishName}
             {reel.dishPrice != null ? ` · ₹${reel.dishPrice}` : ""}
           </p>
         ) : null}
-        {reel.dishName ? (
+        {canOrderDish ? (
           <button
             type="button"
             onClick={() => onOrderDish?.(reel.reelId)}

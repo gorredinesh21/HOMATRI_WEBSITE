@@ -64,7 +64,7 @@ export default function Footer() {
               Active Service Clusters
             </h4>
             <p className="text-xs text-homatri-muted">
-              Ghansoli (Navi Mumbai), Sector 4, 5, 6, 7, Indravati CHS.
+              Ghansoli (Navi Mumbai) — new clusters coming soon.
             </p>
 
             <div className="pt-3">

@@ -27,6 +27,16 @@ export default function ReelFeed({ reels, activeIndex, onActiveChange, onLike, o
 
   return (
     <div ref={containerRef} className="h-[calc(100dvh-8.5rem)] overflow-y-scroll snap-y snap-mandatory">
+      {reels.length === 0 ? (
+        <div className="h-full flex items-center justify-center px-4">
+          <div className="rounded-3xl border border-dashed border-homatri-border bg-white p-10 text-center max-w-sm">
+            <p className="text-sm font-bold text-homatri-dark">No reels yet</p>
+            <p className="text-xs text-homatri-muted mt-1">
+              Kitchens are still filming — check back soon for fresh kitchen stories.
+            </p>
+          </div>
+        </div>
+      ) : null}
       {reels.map((reel, index) => (
         <section key={reel.reelId} data-reel-index={index} className="h-full snap-start">
           <VerticalReelPlayer

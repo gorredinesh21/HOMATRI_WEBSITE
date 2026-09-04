@@ -18,7 +18,7 @@ export default function DeliveryAddressModal({ isOpen, onClose, onSaveAddress })
   const [flatNo, setFlatNo] = useState("");
   const [streetAddress, setStreetAddress] = useState("");
   const [landmark, setLandmark] = useState("");
-  const [phone, setPhone] = useState(customerPhone || user?.phone || "7416767453");
+  const [phone, setPhone] = useState(customerPhone || user?.phone || "");
   const [gpsLocation, setGpsLocation] = useState({ lat: 19.1234, lng: 73.0123 });
   const [isDetectingGps, setIsDetectingGps] = useState(false);
   const [error, setError] = useState("");
@@ -194,9 +194,11 @@ export default function DeliveryAddressModal({ isOpen, onClose, onSaveAddress })
                           <p className="text-xs font-bold text-homatri-dark mt-1">
                             {addr.fullAddress || `${addr.flatNo}, ${addr.streetAddress}`}
                           </p>
-                          <p className="text-[10px] text-homatri-muted mt-0.5">
-                            Phone: +91 {addr.phone || "7416767453"}
-                          </p>
+                          {addr.phone ? (
+                            <p className="text-[10px] text-homatri-muted mt-0.5">
+                              Phone: +91 {addr.phone}
+                            </p>
+                          ) : null}
                         </div>
                       </div>
                       {isSelected ? (

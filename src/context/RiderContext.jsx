@@ -4,10 +4,10 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { useAuth } from "@/context/AuthContext";
 import {
   fetchRiderTrip,
+  fetchRiderWsUrl,
   riderConfirmGate,
   riderConfirmPickup,
   riderDeliver,
-  riderLocationWsUrl,
   riderReport,
   riderSetShift,
   riderSos,
@@ -127,8 +127,14 @@ export function RiderProvider({ children }) {
       socketRef.current = null;
       return undefined;
     }
-    const ws = new WebSocket(riderLocationWsUrl(token));
-    socketRef.current = ws;
+    let cancelled = false;
+    let ws = null;
+    let timer = null;
+    (async () => {
+      const url = await fetchRiderWsUrl(token);
+      if (cancelled || !url) return;
+      ws = new WebSocket(url);
+      socketRef.current = ws;
     const ping = () => {
       const send = (coords) => {
         if (ws.readyState === WebSocket.OPEN) {
@@ -149,7 +155,7 @@ export function RiderProvider({ children }) {
       );
     };
     ws.onopen = ping;
-    const timer = setInterval(ping, 10000);
+    timer = setInterval(ping, 10000);
     ws.onmessage = (ev) => {
       try {
         const msg = JSON.parse(ev.data);
@@ -158,9 +164,11 @@ export function RiderProvider({ children }) {
         /* ignore */
       }
     };
+    })();
     return () => {
-      clearInterval(timer);
-      ws.close();
+      cancelled = true;
+      if (timer) clearInterval(timer);
+      ws?.close();
     };
   }, [token, shiftOn]);
 

@@ -26,9 +26,11 @@ export default function UserProfileModal({ isOpen, onClose }) {
               <h2 className="font-display font-medium text-lg text-homatri-dark">
                 {user?.full_name || user?.name || "Homaatri Member"}
               </h2>
-              <p className="text-xs font-semibold text-homatri-muted">
-                +91 {user?.phone || customerPhone || "9876543210"}
-              </p>
+              {user?.phone || customerPhone ? (
+                <p className="text-xs font-semibold text-homatri-muted">
+                  +91 {user?.phone || customerPhone}
+                </p>
+              ) : null}
             </div>
           </div>
           <button

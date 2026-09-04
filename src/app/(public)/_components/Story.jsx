@@ -28,7 +28,7 @@ export default function Story() {
                     </div>
                   </div>
                   <p className="text-xs text-homatri-muted leading-relaxed italic">
-                    "After moving to Navi Mumbai for work, commercial restaurant food left me sick of excess oil. Finding Chef Sunita's home kitchen felt like eating at my own mother's house."
+                    "After moving to Navi Mumbai for work, commercial restaurant food left me sick of excess oil. Finding a verified homemaker's kitchen nearby felt like eating at my own mother's house."
                   </p>
                 </div>
 

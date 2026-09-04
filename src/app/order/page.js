@@ -13,17 +13,45 @@ import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { useLocation } from "@/context/LocationContext";
 import { filterKitchens } from "@/lib/catalog";
-import { fetchPublicChefs, fetchPublicReels } from "@/lib/api";
+import { API_BASE_URL, fetchPublicChefs, fetchPublicReels, likeReel } from "@/lib/api";
+
+function toMediaUrl(url) {
+  return url && url.startsWith("/") ? `${API_BASE_URL}${url}` : url;
+}
+
+function normalizeReel(raw) {
+  const videoUrl = raw.video_url ?? raw.videoUrl ?? "";
+  const thumbnailUrl = raw.thumbnail_url ?? raw.thumbnailUrl ?? videoUrl;
+  return {
+    reelId: raw.reel_id ?? raw.reelId,
+    chefId: raw.chef_phone ?? raw.chefId ?? raw.chef_id,
+    chefName: raw.chef_name ?? raw.chefName,
+    kitchenName: raw.kitchen_name ?? raw.kitchenName,
+    caption: raw.caption ?? raw.title ?? "",
+    videoUrl: toMediaUrl(videoUrl),
+    thumbnailUrl: toMediaUrl(thumbnailUrl),
+    likeCount: raw.likes_count ?? raw.likeCount ?? 0,
+    commentCount: raw.comments_count ?? raw.commentCount ?? 0,
+    isLiked: Boolean(raw.is_liked ?? raw.isLiked),
+    dishName: raw.dish_tag_name ?? raw.dishName ?? raw.dish_name ?? null,
+    dishPrice: raw.dish_tag_price ?? raw.dishPrice ?? raw.dish_price ?? null,
+    featuredMenuItemId: raw.featured_menu_item_id ?? raw.featuredMenuItemId ?? null,
+  };
+}
 
 export default function OrderPortalPage() {
   const searchParams = useSearchParams();
   const { locationLabel, setCluster, activeCluster } = useLocation();
-  const { isAuthenticated, requireAuthentication, setIsAuthModalOpen, customerPhone } = useAuth();
+  const { isAuthenticated, requireAuthentication, setIsAuthModalOpen, customerPhone, token } = useAuth();
   const { items, addItem, openCart, closeCart, isOpen, beginCheckout, deliveryFee, error, mealWindow } = useCart();
 
   const [activeTab, setActiveTab] = useState("KITCHENS");
   const [kitchens, setKitchens] = useState([]);
+  const [kitchensStatus, setKitchensStatus] = useState("LOADING");
+  const [kitchensError, setKitchensError] = useState("");
   const [reels, setReels] = useState([]);
+  const [reelsStatus, setReelsStatus] = useState("LOADING");
+  const [reelsError, setReelsError] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
   const [openChefId, setOpenChefId] = useState(null);
   const [currentlyServing, setCurrentlyServing] = useState(false);
@@ -39,28 +67,40 @@ export default function OrderPortalPage() {
     if (location) setCluster(location);
   }, [searchParams, setCluster]);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const remote = await fetchPublicChefs();
-        const list = Array.isArray(remote) ? remote : remote?.chefs || remote?.data;
-        if (!cancelled) setKitchens(Array.isArray(list) ? list : []);
-      } catch {
-        if (!cancelled) setKitchens([]);
-      }
-      try {
-        const remoteReels = await fetchPublicReels();
-        const list = Array.isArray(remoteReels) ? remoteReels : remoteReels?.reels || remoteReels?.data;
-        if (!cancelled) setReels(Array.isArray(list) ? list : []);
-      } catch {
-        if (!cancelled) setReels([]);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+  const loadKitchens = useCallback(async () => {
+    setKitchensStatus("LOADING");
+    setKitchensError("");
+    try {
+      const remote = await fetchPublicChefs();
+      const list = Array.isArray(remote) ? remote : remote?.chefs || remote?.data;
+      setKitchens(Array.isArray(list) ? list : []);
+      setKitchensStatus("READY");
+    } catch (err) {
+      setKitchens([]);
+      setKitchensError(err?.message || "Could not load kitchens.");
+      setKitchensStatus("ERROR");
+    }
   }, []);
+
+  const loadReels = useCallback(async () => {
+    setReelsStatus("LOADING");
+    setReelsError("");
+    try {
+      const remoteReels = await fetchPublicReels();
+      const list = Array.isArray(remoteReels) ? remoteReels : remoteReels?.reels || remoteReels?.data;
+      setReels(Array.isArray(list) ? list.map(normalizeReel) : []);
+      setReelsStatus("READY");
+    } catch (err) {
+      setReels([]);
+      setReelsError(err?.message || "Could not load reels.");
+      setReelsStatus("ERROR");
+    }
+  }, []);
+
+  useEffect(() => {
+    loadKitchens();
+    loadReels();
+  }, [loadKitchens, loadReels]);
 
   const filtered = useMemo(
     () =>
@@ -133,20 +173,22 @@ export default function OrderPortalPage() {
             }
             return null;
           })()
-        : {
-            item: { menuItemId: reel.featuredMenuItemId || reel.reelId, itemName: reel.dishName, price: reel.dishPrice },
-            kitchen: { chefId: reel.chefId },
-          };
-      if (!resolved?.item) return;
+        : null;
+      const item =
+        resolved?.item ||
+        (reel.dishName && reel.dishPrice != null
+          ? { menuItemId: reel.reelId, itemName: reel.dishName, price: reel.dishPrice }
+          : null);
+      if (!item) return;
       guard(() => {
         addItem({
-          menuItemId: resolved.item.menuItemId,
-          chefId: resolved.kitchen.chefId || reel.chefId,
-          itemName: resolved.item.itemName || reel.dishName,
+          menuItemId: item.menuItemId,
+          chefId: resolved?.kitchen?.chefId || reel.chefId,
+          itemName: item.itemName,
           quantity: 1,
           mealWindow: mealWindow || "LUNCH",
-          unitPriceDisplay: resolved.item.price || reel.dishPrice || 0,
-          lineTotalDisplay: resolved.item.price || reel.dishPrice || 0,
+          unitPriceDisplay: item.price,
+          lineTotalDisplay: item.price,
         });
       });
     },
@@ -168,6 +210,40 @@ export default function OrderPortalPage() {
       });
     },
     [guard]
+  );
+
+  const handleLikeReel = useCallback(
+    (reelId) => {
+      guard(() => {
+        setReels((prev) =>
+          prev.map((entry) =>
+            entry.reelId === reelId
+              ? {
+                  ...entry,
+                  isLiked: !entry.isLiked,
+                  likeCount: Math.max(0, (entry.likeCount || 0) + (entry.isLiked ? -1 : 1)),
+                }
+              : entry
+          )
+        );
+        // Fire-and-forget: the backend like endpoint toggles and returns the
+        // authoritative count, which we silently sync back to.
+        likeReel(reelId, token)
+          .then((result) => {
+            if (result && typeof result.likes_count === "number") {
+              setReels((prev) =>
+                prev.map((entry) =>
+                  entry.reelId === reelId
+                    ? { ...entry, isLiked: Boolean(result.liked), likeCount: result.likes_count }
+                    : entry
+                )
+              );
+            }
+          })
+          .catch(() => {});
+      });
+    },
+    [guard, token]
   );
 
   return (
@@ -196,30 +272,54 @@ export default function OrderPortalPage() {
             cuisine={cuisine}
             onCuisineChange={setCuisine}
           />
-          <SwipeCardDeck
-            kitchens={filtered}
-            activeIndex={Math.min(activeIndex, Math.max(0, filtered.length - 1))}
-            onCardOpen={setOpenChefId}
-            onNext={onNext}
-            onPrevious={onPrevious}
-          />
+          {kitchensStatus === "LOADING" ? (
+            <div className="max-w-md mx-auto">
+              <div className="h-[520px] rounded-3xl bg-white border border-homatri-border animate-pulse" />
+            </div>
+          ) : kitchensStatus === "ERROR" ? (
+            <div className="rounded-3xl border border-dashed border-red-200 bg-white p-10 text-center space-y-3">
+              <p className="text-sm font-semibold text-red-600">{kitchensError}</p>
+              <button
+                type="button"
+                onClick={loadKitchens}
+                className="text-xs font-bold text-homatri-orange hover:text-homatri-orange-dark"
+              >
+                Try again
+              </button>
+            </div>
+          ) : (
+            <SwipeCardDeck
+              kitchens={filtered}
+              activeIndex={Math.min(activeIndex, Math.max(0, filtered.length - 1))}
+              onCardOpen={setOpenChefId}
+              onNext={onNext}
+              onPrevious={onPrevious}
+            />
+          )}
         </main>
+      ) : reelsStatus === "LOADING" ? (
+        <div className="h-[calc(100dvh-8.5rem)] flex items-center justify-center px-4">
+          <div className="w-full max-w-sm aspect-[9/16] max-h-full rounded-3xl bg-slate-200 animate-pulse" />
+        </div>
+      ) : reelsStatus === "ERROR" ? (
+        <div className="h-[calc(100dvh-8.5rem)] flex items-center justify-center px-4">
+          <div className="rounded-3xl border border-dashed border-red-200 bg-white p-10 text-center space-y-3 max-w-sm">
+            <p className="text-sm font-semibold text-red-600">{reelsError}</p>
+            <button
+              type="button"
+              onClick={loadReels}
+              className="text-xs font-bold text-homatri-orange hover:text-homatri-orange-dark"
+            >
+              Try again
+            </button>
+          </div>
+        </div>
       ) : (
         <ReelFeed
           reels={reels}
           activeIndex={activeReelIndex}
           onActiveChange={setActiveReelIndex}
-          onLike={(reelId) =>
-            guard(() => {
-              setReels((prev) =>
-                prev.map((entry) =>
-                  entry.reelId === reelId
-                    ? { ...entry, isLiked: true, likeCount: (entry.likeCount || 0) + 1 }
-                    : entry
-                )
-              );
-            })
-          }
+          onLike={handleLikeReel}
           onComment={(reelId) =>
             guard(() => {
               setCommentReelId(reelId);
@@ -254,7 +354,6 @@ export default function OrderPortalPage() {
         open={commentOpen}
         onClose={() => setCommentOpen(false)}
         reelId={commentReelId}
-        onSubmit={() => setCommentOpen(false)}
       />
       {isAuthenticated && customerPhone ? (
         <p className="sr-only">Signed in as {customerPhone}</p>

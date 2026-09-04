@@ -1,7 +1,21 @@
-export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ||
-  process.env.NEXT_PUBLIC_BACKEND_URL ||
-  "https://api.homatri.com";
+// Browser calls go through the SAME-ORIGIN Next.js proxy (next.config.mjs
+// rewrites /homatri-api/* -> BACKEND_ORIGIN/*). No hardcoded absolute URLs,
+// no CORS, no baked build-time API host. The checkout BFF route and the
+// runtime-config endpoint read the backend origin from server env at runtime.
+export const API_BASE_URL = "/homatri-api";
+
+let _wsOriginPromise = null;
+
+async function apiWsOrigin() {
+  if (typeof window === "undefined") return null;
+  if (!_wsOriginPromise) {
+    _wsOriginPromise = fetch("/api/runtime-config", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => d.apiOrigin)
+      .catch(() => null);
+  }
+  return _wsOriginPromise;
+}
 
 export const DELIVERY_FEE_DISPLAY = 30;
 
@@ -117,7 +131,7 @@ export function normalizeAddress(addr) {
   const landmark = addr.landmark || "";
   const cluster = addr.cluster || "Ghansoli";
   const addressType = (addr.addressType || addr.address_type || "HOME").toUpperCase();
-  const phone = addr.phone || "7416767453";
+  const phone = addr.phone || "";
   const fullAddress =
     addr.fullAddress ||
     addr.full_address ||
@@ -211,6 +225,31 @@ export async function fetchPublicReels() {
   return apiRequest("/api/v1/reels/feed");
 }
 
+export async function fetchReelComments(reelId) {
+  return apiRequest(`/api/v1/reels/${encodeURIComponent(reelId)}/comments`);
+}
+
+export async function postReelComment({ reelId, text, parentCommentId, phone, fullName, avatarUrl }) {
+  return apiRequest("/api/v1/reels/comments", {
+    method: "POST",
+    body: {
+      reel_id: reelId,
+      user_phone: phone,
+      text,
+      ...(parentCommentId ? { parent_comment_id: parentCommentId } : {}),
+      ...(fullName ? { username: fullName } : {}),
+      ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
+    },
+  });
+}
+
+export async function likeReel(reelId, token) {
+  return apiRequest(`/api/v1/reels/${encodeURIComponent(reelId)}/like`, {
+    method: "POST",
+    token,
+  });
+}
+
 export async function fetchOrder(orderId, token) {
   return apiRequest(`/api/v1/orders/${orderId}`, { token });
 }
@@ -235,13 +274,19 @@ export async function uploadChefReel(formData, token) {
   return data;
 }
 
-export function riderLocationWsUrl(token) {
-  const http = API_BASE_URL.replace(/\/$/, "");
+export function riderLocationWsUrl(apiOrigin, token) {
+  const http = String(apiOrigin || "").replace(/\/$/, "");
   const ws = http.startsWith("https://")
     ? http.replace(/^https:\/\//, "wss://")
     : http.replace(/^http:\/\//, "ws://");
   const q = token ? `?token=${encodeURIComponent(token)}` : "";
   return `${ws}/ws/v1/rider/location${q}`;
+}
+
+export async function fetchRiderWsUrl(token) {
+  const origin = await apiWsOrigin();
+  if (!origin) return null;
+  return riderLocationWsUrl(origin, token);
 }
 
 export async function fetchKitchens({ cluster, mealWindow } = {}) {
