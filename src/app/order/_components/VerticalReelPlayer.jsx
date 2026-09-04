@@ -17,6 +17,14 @@ export default function VerticalReelPlayer({
   const [progressSeconds, setProgressSeconds] = useState(0);
   const [durationSeconds, setDurationSeconds] = useState(0);
   const [hasRegisteredInitialView, setHasRegisteredInitialView] = useState(false);
+  const [heartPop, setHeartPop] = useState(false);
+
+  // Instagram-style double-tap to like, with a big heart burst.
+  const handleDoubleTap = () => {
+    if (!reel?.isLiked) onLike?.(reel.reelId);
+    setHeartPop(true);
+    window.setTimeout(() => setHeartPop(false), 900);
+  };
 
   useEffect(() => {
     const video = videoRef.current;
@@ -42,14 +50,18 @@ export default function VerticalReelPlayer({
   const canOrderDish = Boolean(reel.dishName) && (Boolean(reel.featuredMenuItemId) || reel.dishPrice != null);
 
   return (
-    <div className="relative h-full w-full bg-black overflow-hidden">
+    <div
+      className="relative h-full w-full bg-black overflow-hidden"
+      onDoubleClick={handleDoubleTap}
+    >
       {isPhoto ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={mediaUrl}
           alt={reel.caption || reel.kitchenName || "Chef photo"}
           decoding="async"
-          className="absolute inset-0 h-full w-full object-contain bg-black"
+          draggable={false}
+          className="absolute inset-0 h-full w-full object-contain bg-black select-none"
           onLoad={() => {
             if (isActive && !hasRegisteredInitialView) {
               setHasRegisteredInitialView(true);
@@ -70,6 +82,12 @@ export default function VerticalReelPlayer({
           onLoadedMetadata={(event) => setDurationSeconds(event.currentTarget.duration || 0)}
         />
       )}
+
+      {heartPop ? (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <Heart className="reel-heart-pop w-28 h-28 fill-white/95 text-white/95 drop-shadow-2xl" />
+        </div>
+      ) : null}
 
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20" />
 
