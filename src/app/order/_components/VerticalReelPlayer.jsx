@@ -48,7 +48,8 @@ export default function VerticalReelPlayer({
         <img
           src={mediaUrl}
           alt={reel.caption || reel.kitchenName || "Chef photo"}
-          className="absolute inset-0 h-full w-full object-cover"
+          decoding="async"
+          className="absolute inset-0 h-full w-full object-contain bg-black"
           onLoad={() => {
             if (isActive && !hasRegisteredInitialView) {
               setHasRegisteredInitialView(true);

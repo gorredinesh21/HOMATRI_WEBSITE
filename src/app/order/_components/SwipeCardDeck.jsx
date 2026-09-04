@@ -1,7 +1,117 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Star, ShieldCheck } from "lucide-react";
+
+const isPhotoUrl = (url) => /\.(jpe?g|png|webp|gif)(\?|$)/i.test(String(url || ""));
+
+function kitchenPhotos(kitchen) {
+  const urls = [kitchen.photoUrl || kitchen.profileImageUrl];
+  for (const reel of kitchen.reels || []) {
+    const url = reel.videoUrl || reel.thumbnailUrl;
+    if (url && isPhotoUrl(url)) urls.push(url);
+  }
+  return [...new Set(urls.filter(Boolean))];
+}
+
+// Instagram-style multi-photo carousel with horizontal swipe, dots and chevrons.
+// Own pointer handling (stopPropagation) so photo swipes don't swipe the card.
+function PhotoCarousel({ photos, alt }) {
+  const [index, setIndex] = useState(0);
+  const startX = useRef(null);
+  const count = photos.length;
+
+  const go = (next) => setIndex(((next % count) + count) % count);
+
+  const onPointerDown = (e) => {
+    e.stopPropagation();
+    startX.current = e.clientX;
+  };
+  const onPointerUp = (e) => {
+    e.stopPropagation();
+    if (startX.current == null) return;
+    const delta = e.clientX - startX.current;
+    startX.current = null;
+    if (delta < -40) go(index + 1);
+    else if (delta > 40) go(index - 1);
+  };
+
+  useEffect(() => {
+    setIndex(0);
+  }, [photos.join("|")]);
+
+  return (
+    <div
+      data-photo-carousel
+      className="relative h-72 bg-homatri-cream border-b border-homatri-border overflow-hidden select-none touch-pan-y"
+      onPointerDown={onPointerDown}
+      onPointerUp={onPointerUp}
+    >
+      {count > 1 ? (
+        <div
+          className="flex h-full w-full transition-transform duration-300 ease-out"
+          style={{ transform: `translateX(-${index * 100}%)` }}
+        >
+          {photos.map((url, i) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              key={url}
+              src={url}
+              alt={`${alt} — photo ${i + 1}`}
+              draggable={false}
+              loading={i === 0 ? "eager" : "lazy"}
+              className="h-full w-full shrink-0 object-contain"
+            />
+          ))}
+        </div>
+      ) : (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={photos[0] || "/logo.jpg"}
+          alt={alt}
+          draggable={false}
+          className="h-full w-full object-contain"
+        />
+      )}
+
+      {count > 1 && (
+        <>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); go(index - 1); }}
+            onPointerDown={(e) => e.stopPropagation()}
+            onPointerUp={(e) => e.stopPropagation()}
+            className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/85 hover:bg-white shadow flex items-center justify-center"
+            aria-label="Previous photo"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); go(index + 1); }}
+            onPointerDown={(e) => e.stopPropagation()}
+            onPointerUp={(e) => e.stopPropagation()}
+            className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/85 hover:bg-white shadow flex items-center justify-center"
+            aria-label="Next photo"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-black/35 rounded-full px-2 py-1">
+            {photos.map((url, i) => (
+              <span
+                key={url}
+                className={`h-1.5 rounded-full transition-all ${i === index ? "w-4 bg-white" : "w-1.5 bg-white/50"}`}
+              />
+            ))}
+          </div>
+          <span className="absolute top-2 right-2 bg-black/45 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+            {index + 1}/{count}
+          </span>
+        </>
+      )}
+    </div>
+  );
+}
 
 export default function SwipeCardDeck({
   kitchens = [],
@@ -30,14 +140,16 @@ export default function SwipeCardDeck({
     setDragX(0);
     if (delta > 80) {
       onSwipeRight?.(current?.chefId);
-      onPrevious?.();
+      onNext?.();
     } else if (delta < -80) {
       onSwipeLeft?.(current?.chefId);
-      onNext?.();
+      onPrevious?.();
     }
   };
 
   const onPointerDown = (event) => {
+    // Swipes starting inside the photo carousel change photos, not cards.
+    if (event.target.closest?.("[data-photo-carousel]")) return;
     startX.current = event.clientX;
     setIsDragging(true);
   };
@@ -55,7 +167,7 @@ export default function SwipeCardDeck({
   return (
     <div className="relative max-w-md mx-auto">
       <div
-        className="relative h-[520px] touch-pan-y"
+        className="relative h-[560px] touch-pan-y"
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
@@ -76,12 +188,7 @@ export default function SwipeCardDeck({
                 transition: isDragging && isTop ? "none" : "transform 200ms ease",
               }}
             >
-              <div
-                className="h-64 bg-cover bg-center"
-                style={{
-                  backgroundImage: `url(${kitchen.photoUrl || kitchen.profileImageUrl || "/logo.jpg"})`,
-                }}
-              />
+              <PhotoCarousel photos={kitchenPhotos(kitchen)} alt={kitchen.kitchenName} />
               <div className="p-5 space-y-3">
                 <div className="flex items-start justify-between gap-3">
                   <div>

@@ -19,14 +19,32 @@ export default function ReelFeed({ reels, activeIndex, onActiveChange, onLike, o
         const index = Number(visible.target.getAttribute("data-reel-index"));
         if (!Number.isNaN(index)) onActiveChange?.(index);
       },
-      { root, threshold: 0.65 }
+      { root, threshold: 0.6 }
     );
     sections.forEach((section) => observer.observe(section));
     return () => observer.disconnect();
   }, [reels, onActiveChange]);
 
+  // Preload the neighbouring reel photos so the snap transition doesn't
+  // flash a blank frame mid-scroll.
+  useEffect(() => {
+    if (typeof window === "undefined" || activeIndex == null) return;
+    [activeIndex - 1, activeIndex + 1].forEach((i) => {
+      const reel = reels[i];
+      const url = reel?.videoUrl || reel?.thumbnailUrl;
+      if (url && /\.(jpe?g|png|webp|gif)(\?|$)/i.test(url)) {
+        const img = new window.Image();
+        img.decoding = "async";
+        img.src = url;
+      }
+    });
+  }, [reels, activeIndex]);
+
   return (
-    <div ref={containerRef} className="h-[calc(100dvh-8.5rem)] overflow-y-scroll snap-y snap-mandatory">
+    <div
+      ref={containerRef}
+      className="h-[calc(100dvh-8.5rem)] overflow-y-scroll snap-y snap-mandatory overscroll-contain scroll-smooth"
+    >
       {reels.length === 0 ? (
         <div className="h-full flex items-center justify-center px-4">
           <div className="rounded-3xl border border-dashed border-homatri-border bg-white p-10 text-center max-w-sm">
@@ -38,7 +56,7 @@ export default function ReelFeed({ reels, activeIndex, onActiveChange, onLike, o
         </div>
       ) : null}
       {reels.map((reel, index) => (
-        <section key={reel.reelId} data-reel-index={index} className="h-full snap-start">
+        <section key={reel.reelId} data-reel-index={index} className="h-full snap-start snap-always">
           <VerticalReelPlayer
             reel={reel}
             isActive={index === activeIndex}
