@@ -2,9 +2,14 @@
 
 import { useMemo, useState } from "react";
 import { Instagram, Youtube, ShieldCheck, X } from "lucide-react";
+import { getActiveMealWindow } from "@/lib/mealWindow";
 
 export default function ExpandedHingeProfile({ chef, onClose, onOrderItem, onFollow }) {
-  const [activeMealWindow, setActiveMealWindow] = useState("LUNCH");
+  // Default to the window that can still be ordered right now (after the 11:30
+  // lunch cutoff the customer lands on DINNER instead of a dead LUNCH cart).
+  const [activeMealWindow, setActiveMealWindow] = useState(
+    getActiveMealWindow().isPastCutoff ? "LUNCH" : getActiveMealWindow().mealWindow
+  );
   const [selectedQuantities, setSelectedQuantities] = useState({});
   const [dietaryNotes, setDietaryNotes] = useState({});
   const [isFollowing, setIsFollowing] = useState(false);

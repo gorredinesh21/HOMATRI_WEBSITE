@@ -14,7 +14,9 @@ export default function AdminHomePage() {
   const { localSession } = useAdminAuth();
   const windowInfo = getActiveMealWindow();
   const [serviceDate] = useState(todayIso());
-  const [pipeline, setPipeline] = useState(fallbackPipeline());
+  // Start EMPTY (never mock data) — the live poll fills it; failures show an
+  // error instead of silently leaving demo numbers on screen.
+  const [pipeline, setPipeline] = useState({ counts: {}, serviceDate: null, kitchens: [] });
   const [windows, setWindows] = useState(null);
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -31,11 +33,19 @@ export default function AdminHomePage() {
       setPipeline(normalizePipeline(pipe));
       setWindows(wins);
     } catch (err) {
-      if (localSession) {
-        setPipeline(fallbackPipeline());
-        setError("Live pipeline API needs a production admin session. Showing the local desk snapshot.");
-      } else {
-        setError(err.message);
+      // Cloud Run scales to zero — one retry covers the cold start.
+      try {
+        await new Promise((r) => setTimeout(r, 3000));
+        const pipe = await adminApi.pipeline(serviceDate);
+        setPipeline(normalizePipeline(pipe));
+        setWindows(null);
+      } catch (retryErr) {
+        if (localSession) {
+          setPipeline(fallbackPipeline());
+          setError("⚠ LOCAL DESK MOCK DATA — live pipeline needs a production admin session.");
+        } else {
+          setError(retryErr.message || err.message);
+        }
       }
     } finally {
       setBusy(false);

@@ -19,6 +19,7 @@ export default function CartDrawer({
   const {
     items,
     mealWindow,
+    setMealWindow,
     subtotal,
     total,
     customNotes,
@@ -57,6 +58,17 @@ export default function CartDrawer({
   }, [isOpen, onClose]);
 
   if (!isOpen && !pendingPayment) return null;
+
+  // A cart locked to a window whose cutoff already passed is a dead end —
+  // surface a one-tap switch to the next orderable window.
+  const now = new Date();
+  const minutes = now.getHours() * 60 + now.getMinutes();
+  const cartWindowPastCutoff =
+    (mealWindow === "LUNCH" && minutes >= 11 * 60 + 30) ||
+    (mealWindow === "DINNER" && minutes >= 18 * 60 + 30);
+  const switchCartWindow = (next) => {
+    setMealWindow?.(next);
+  };
 
   const handleCheckoutClick = async () => {
     // Check 1: User Authentication
@@ -100,8 +112,17 @@ export default function CartDrawer({
                     Order <strong>{pendingPayment.orderId}</strong> awaiting payment
                   </span>
                 ) : (
-                  <span>
+                  <span className="flex items-center gap-2 flex-wrap">
                     Meal Window: <strong>{mealWindow || "Not set"}</strong>
+                    {cartWindowPastCutoff && mealWindow === "LUNCH" ? (
+                      <button
+                        type="button"
+                        onClick={() => switchCartWindow("DINNER")}
+                        className="bg-homatri-orange text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide"
+                      >
+                        Switch to Dinner →
+                      </button>
+                    ) : null}
                   </span>
                 )}
               </p>

@@ -4,6 +4,7 @@ import PickupConfirmation from "./_components/PickupConfirmation";
 import LegNavigationCard from "./_components/LegNavigationCard";
 import GateDeliveryCard from "./_components/GateDeliveryCard";
 import { useRider } from "@/context/RiderContext";
+import { useAuth } from "@/context/AuthContext";
 
 export default function RiderPortalPage() {
   const {
@@ -27,6 +28,32 @@ export default function RiderPortalPage() {
     reportKitchenDelay,
     reportAddressIssue,
   } = useRider();
+  const { token, requireAuthentication } = useAuth();
+
+  if (!token) {
+    return (
+      <div className="px-4 py-8">
+        <p className="font-display italic text-homatri-orange">Homatri Rider</p>
+        <h1 className="font-display text-2xl font-medium text-homatri-dark mt-1">Rider sign in required</h1>
+        <p className="text-sm text-homatri-muted mt-2">
+          Sign in with your rider phone &amp; password to see your trip, pickups and deliveries.
+        </p>
+        <button
+          type="button"
+          onClick={() => requireAuthentication(() => {})}
+          className="mt-4 bg-homatri-orange hover:bg-homatri-orange-dark text-white font-bold px-5 py-3 rounded-xl text-sm"
+        >
+          Sign in as rider
+        </button>
+        <a
+          href="/rider/onboarding"
+          className="mt-3 block text-xs font-semibold text-homatri-orange hover:underline"
+        >
+          New rider? Complete onboarding →
+        </a>
+      </div>
+    );
+  }
 
   const onShift = shiftStatus === "ON_SHIFT";
   const nextStop = currentGroup[0] || null;

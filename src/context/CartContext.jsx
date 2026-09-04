@@ -104,6 +104,8 @@ export function CartProvider({ children }) {
 
   const setMealWindow = useCallback((window) => {
     setMealWindowState(window);
+    // Keep line items aligned with the cart window (checkout sends the cart window).
+    setItems((prev) => prev.map((entry) => ({ ...entry, mealWindow: window })));
   }, []);
 
   const openCart = useCallback(() => setIsOpen(true), []);
