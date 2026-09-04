@@ -30,13 +30,21 @@ export default function RiderPortalPage() {
   } = useRider();
   const { token, requireAuthentication } = useAuth();
 
-  if (!token) {
+  // Not signed in, or signed in with a non-rider account (e.g. a customer/chef
+  // phone) — both need the rider sign-in, not an empty trip dashboard.
+  const wrongRole = Boolean(token) && String(helpNotice || "").includes("RIDER");
+
+  if (!token || wrongRole) {
     return (
       <div className="px-4 py-8">
         <p className="font-display italic text-homatri-orange">Homatri Rider</p>
-        <h1 className="font-display text-2xl font-medium text-homatri-dark mt-1">Rider sign in required</h1>
+        <h1 className="font-display text-2xl font-medium text-homatri-dark mt-1">
+          {wrongRole ? "This account is not a rider" : "Rider sign in required"}
+        </h1>
         <p className="text-sm text-homatri-muted mt-2">
-          Sign in with your rider phone &amp; password to see your trip, pickups and deliveries.
+          {wrongRole
+            ? "You're signed in with a non-rider phone number. Sign in with your rider account."
+            : "Sign in with your rider phone & password to see your trip, pickups and deliveries."}
         </p>
         <button
           type="button"

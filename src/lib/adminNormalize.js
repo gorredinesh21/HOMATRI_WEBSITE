@@ -8,7 +8,7 @@ export function todayIso() {
 
 export function normalizePipeline(data) {
   const counts = {};
-  const raw = data?.counts || data?.stages || data?.pipeline || data || {};
+  const raw = data?.stage_counts || data?.counts || data?.stages || data?.pipeline || data || {};
   for (const stage of STAGES) {
     const lower = stage.toLowerCase();
     counts[stage] = Number(raw[stage] ?? raw[lower] ?? data?.[stage] ?? 0) || 0;
@@ -17,8 +17,8 @@ export function normalizePipeline(data) {
   if (!Array.isArray(kitchens)) kitchens = [];
   kitchens = kitchens.map((kitchen) => ({
     name: kitchen.kitchen_name || kitchen.name || kitchen.chef_name || "Kitchen",
-    used: Number(kitchen.used ?? kitchen.committed ?? kitchen.meals_committed ?? kitchen.current ?? 0),
-    cap: Number(kitchen.capacity ?? kitchen.daily_capacity ?? kitchen.limit ?? 15),
+    used: Number(kitchen.used ?? kitchen.committed ?? kitchen.meals_committed ?? kitchen.committed_meals ?? kitchen.current ?? 0),
+    cap: Number(kitchen.capacity ?? kitchen.max_daily_capacity ?? kitchen.daily_capacity ?? kitchen.limit ?? 15),
   }));
   return {
     counts,
