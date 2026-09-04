@@ -224,17 +224,20 @@ export default function PhoneOtpModal() {
           </form>
         )}
 
-        {/* GOOGLE SIGN IN BUTTON */}
-        <div className="pt-2 border-t border-slate-200">
-          <div className="text-center text-[10px] uppercase font-bold text-slate-400 mb-2">Or Continue With</div>
-          <div className="flex justify-center">
-            <GoogleLogin
-              clientId={GOOGLE_CLIENT_ID}
-              onSuccess={(res) => completeGoogleAuth({ idToken: res.credential })}
-              onError={() => setLocalError("Google sign in failed.")}
-            />
+        {/* GOOGLE SIGN IN BUTTON — only when a client id is configured
+            (rendering GoogleLogin without GoogleOAuthProvider crashes the app) */}
+        {GOOGLE_CLIENT_ID ? (
+          <div className="pt-2 border-t border-slate-200">
+            <div className="text-center text-[10px] uppercase font-bold text-slate-400 mb-2">Or Continue With</div>
+            <div className="flex justify-center">
+              <GoogleLogin
+                clientId={GOOGLE_CLIENT_ID}
+                onSuccess={(res) => completeGoogleAuth({ idToken: res.credential })}
+                onError={() => setLocalError("Google sign in failed.")}
+              />
+            </div>
           </div>
-        </div>
+        ) : null}
 
         {/* LINK TO TOGGLE BETWEEN SIGN_UP AND LOG_IN */}
         <div className="text-center pt-1 border-t border-slate-100">

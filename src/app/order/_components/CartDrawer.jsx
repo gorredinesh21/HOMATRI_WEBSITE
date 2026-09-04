@@ -41,7 +41,7 @@ export default function CartDrawer({
   // Selected Delivery Address State
   const [savedAddress, setSavedAddress] = useState(
     user?.delivery_address
-      ? { fullAddress: user.delivery_address, phone: customerPhone || "7416767453" }
+      ? { fullAddress: user.delivery_address, phone: customerPhone || "" }
       : null
   );
 
@@ -245,7 +245,7 @@ export default function CartDrawer({
                         {savedAddress.fullAddress}
                       </p>
                       <p className="text-[10px] text-homatri-muted">
-                        Phone: +91 {savedAddress.phone || customerPhone || "7416767453"}
+                        Phone: +91 {savedAddress.phone || customerPhone}
                       </p>
                     </div>
                     <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />

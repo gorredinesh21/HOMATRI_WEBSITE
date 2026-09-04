@@ -124,7 +124,7 @@ export function CartProvider({ children }) {
     window.location.href = `/order/tracking?order_id=${encodeURIComponent(orderId)}`;
   };
 
-  const beginCheckout = useCallback(async () => {
+  const beginCheckout = useCallback(async (deliveryAddress = null) => {
     if (!items.length) {
       setError("Your cart is empty.");
       return;
@@ -134,7 +134,7 @@ export function CartProvider({ children }) {
       pendingCheckout.current = true;
       requireAuthentication(() => {
         pendingCheckout.current = false;
-        beginCheckout();
+        beginCheckout(deliveryAddress);
       });
       return;
     }
@@ -153,6 +153,17 @@ export function CartProvider({ children }) {
         customer_note: item.customNote || null,
       })),
     };
+    // The cart drawer passes the selected delivery address through — without it
+    // the backend falls back to the (often empty) customer profile and rejects.
+    if (deliveryAddress?.fullAddress || deliveryAddress?.id) {
+      payload.delivery_address = {
+        address_id: deliveryAddress.id || null,
+        full_address: deliveryAddress.fullAddress || deliveryAddress.full_address || null,
+        phone: deliveryAddress.phone || customerPhone || null,
+        latitude: deliveryAddress.latitude ?? null,
+        longitude: deliveryAddress.longitude ?? null,
+      };
+    }
 
     try {
       const result = await checkoutOrder(payload, token);
