@@ -67,11 +67,15 @@ export default function BulkCateringPage() {
       return;
     }
     requireAuthentication(async () => {
+      if (!customerPhone) {
+        setError("Sign in with your phone number to request a quote.");
+        return;
+      }
       setError("");
       setMessage("");
       try {
         const result = await checkoutBulkOrder({
-          customer_phone: customerPhone || "9999999999",
+          customer_phone: customerPhone,
           event_date: eventDate,
           event_time: `${eventTime}:00`,
           guest_count: guestCount,

@@ -34,37 +34,60 @@ export default function VerticalReelPlayer({
 
   if (!reel) return null;
 
+  // Photo reels (jpg/png/webp from the chef gallery) render as an image, not <video>.
+  const mediaUrl = String(reel.videoUrl || "");
+  const isPhoto = /\.(jpe?g|png|webp|gif)(\?|$)/i.test(mediaUrl);
+
   const progress = durationSeconds ? Math.min(100, (progressSeconds / durationSeconds) * 100) : 0;
   const canOrderDish = Boolean(reel.dishName) && (Boolean(reel.featuredMenuItemId) || reel.dishPrice != null);
 
   return (
     <div className="relative h-full w-full bg-black overflow-hidden">
-      <video
-        ref={videoRef}
-        src={reel.videoUrl}
-        poster={reel.thumbnailUrl}
-        loop
-        playsInline
-        muted={isMuted}
-        className="absolute inset-0 h-full w-full object-cover"
-        onTimeUpdate={(event) => setProgressSeconds(event.currentTarget.currentTime || 0)}
-        onLoadedMetadata={(event) => setDurationSeconds(event.currentTarget.duration || 0)}
-      />
+      {isPhoto ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={mediaUrl}
+          alt={reel.caption || reel.kitchenName || "Chef photo"}
+          className="absolute inset-0 h-full w-full object-cover"
+          onLoad={() => {
+            if (isActive && !hasRegisteredInitialView) {
+              setHasRegisteredInitialView(true);
+              onView?.(reel?.reelId);
+            }
+          }}
+        />
+      ) : (
+        <video
+          ref={videoRef}
+          src={reel.videoUrl}
+          poster={reel.thumbnailUrl}
+          loop
+          playsInline
+          muted={isMuted}
+          className="absolute inset-0 h-full w-full object-cover"
+          onTimeUpdate={(event) => setProgressSeconds(event.currentTarget.currentTime || 0)}
+          onLoadedMetadata={(event) => setDurationSeconds(event.currentTarget.duration || 0)}
+        />
+      )}
 
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20" />
 
-      <div className="absolute top-0 left-0 right-0 h-1 bg-white/20">
-        <div className="h-full bg-homatri-orange" style={{ width: `${progress}%` }} />
-      </div>
+      {!isPhoto && (
+        <div className="absolute top-0 left-0 right-0 h-1 bg-white/20">
+          <div className="h-full bg-homatri-orange" style={{ width: `${progress}%` }} />
+        </div>
+      )}
 
-      <button
-        type="button"
-        onClick={() => setIsMuted((value) => !value)}
-        className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/40 text-white flex items-center justify-center"
-        aria-label={isMuted ? "Unmute" : "Mute"}
-      >
-        {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-      </button>
+      {!isPhoto && (
+        <button
+          type="button"
+          onClick={() => setIsMuted((value) => !value)}
+          className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/40 text-white flex items-center justify-center"
+          aria-label={isMuted ? "Unmute" : "Mute"}
+        >
+          {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+        </button>
+      )}
 
       <div className="absolute right-3 bottom-28 flex flex-col items-center gap-4 text-white">
         <button type="button" onClick={() => onLike?.(reel.reelId)} className="flex flex-col items-center gap-1">
