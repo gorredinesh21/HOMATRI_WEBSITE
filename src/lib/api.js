@@ -361,6 +361,18 @@ export async function chefPatchKitchen(body, token) {
   return apiRequest("/api/v1/chef/me/kitchen", { method: "PATCH", token, body });
 }
 
+export async function fetchChefContentPlan(token) {
+  return apiRequest("/api/v1/chef/me/content-plan", { token });
+}
+
+export async function updateChefContentDay(day, { completed, scenes }, token) {
+  return apiRequest(`/api/v1/chef/me/content-plan/${day}`, {
+    method: "PUT",
+    token,
+    body: { completed, scenes },
+  });
+}
+
 export async function fetchRiderTrip(token) {
   return apiRequest("/api/v1/rider/me/trip", { token });
 }
