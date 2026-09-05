@@ -22,12 +22,8 @@ export function AdminAuthProvider({ children }) {
     let cancelled = false;
     (async () => {
       if (isLocalAdminSession()) {
-        if (!cancelled) {
-          setLocalSession(true);
-          setAdmin({ email: "ops@local", name: "Local operations" });
-          setReady(true);
-        }
-        return;
+        // Stale flag from the removed passwordless "local desk" — clear it.
+        setLocalAdminSession(false);
       }
       const stored = getAdminToken();
       if (stored) setToken(stored);
@@ -88,12 +84,13 @@ export function AdminAuthProvider({ children }) {
       token,
       ready,
       localSession,
-      isAuthenticated: Boolean(admin) || Boolean(token) || localSession,
+      // Security: ONLY a real token/authenticated admin grants access.
+      // The passwordless "local desk" bypass was removed.
+      isAuthenticated: Boolean(admin && (token || admin.email !== "ops@local")) && !localSession,
       login,
-      enterLocalSession,
       logout,
     }),
-    [admin, token, ready, localSession, login, enterLocalSession, logout]
+    [admin, token, ready, localSession, login, logout]
   );
 
   return <AdminAuthContext.Provider value={value}>{children}</AdminAuthContext.Provider>;

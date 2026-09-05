@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useAdminAuth } from "@/context/AdminAuthContext";
 
 export default function AdminLoginPage() {
-  const { login, enterLocalSession } = useAdminAuth();
+  const { login } = useAdminAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
@@ -53,15 +53,8 @@ export default function AdminLoginPage() {
         <button type="submit" disabled={busy} className="w-full bg-homatri-orange text-white font-semibold py-3 rounded-xl">
           {busy ? "Signing in…" : "Enter production operations"}
         </button>
-        <button
-          type="button"
-          onClick={enterLocalSession}
-          className="w-full border border-homatri-border font-semibold py-3 rounded-xl text-sm"
-        >
-          Open local operations desk
-        </button>
         <p className="text-[11px] text-homatri-muted">
-          Local desk opens the admin UI on this machine. Seed/wipe still hit production if you use those buttons.
+          Only authorised operators have admin credentials. Every admin page requires this sign-in.
         </p>
       </form>
     </div>
