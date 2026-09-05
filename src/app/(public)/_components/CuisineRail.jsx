@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { MessageCircle, Sparkles } from "lucide-react";
 import { kitchenPhotos } from "@/lib/visuals";
-import { ALL_REGIONS, CUISINE_TREE, cuisineRequestUrl, defaultRegion } from "@/lib/cuisineTree";
+import { ALL_REGIONS, CUISINE_TREE, cuisineRequestUrl } from "@/lib/cuisineTree";
 
 // Circular cuisine cards get a real photo when kitchens in that cuisine are
 // live; upcoming cuisines render dashed with a WhatsApp request instead of a
@@ -22,7 +22,7 @@ export default function CuisineRail({ kitchens }) {
     () => [...new Set(kitchens.map((entry) => entry.regionalIdentity || entry.hometownRegion).filter(Boolean))],
     [kitchens]
   );
-  const [region, setRegion] = useState(defaultRegion(liveRegionValues));
+  const [region, setRegion] = useState("Maharashtra"); // launch region, pinned by default
 
   const cuisines = CUISINE_TREE.find((entry) => entry.region === region)?.cuisines || [];
 

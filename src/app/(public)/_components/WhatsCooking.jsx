@@ -6,7 +6,7 @@ import { ArrowRight, Clock, Flame, MapPin, Plus, Soup, Star, Truck, Users, Utens
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { regionLabel } from "@/lib/visuals";
-import { ALL_REGIONS, cuisinesForRegion, cuisineRequestUrl, defaultRegion } from "@/lib/cuisineTree";
+import { ALL_REGIONS, cuisinesForRegion, cuisineRequestUrl } from "@/lib/cuisineTree";
 
 const TABS = [
   { id: "LUNCH", label: "Lunch", hint: "11:30 AM cutoff" },
@@ -114,7 +114,7 @@ export default function WhatsCooking({ dishes, activeTab, onTabChange }) {
     () => [...new Set(dishes.map((dish) => dish.kitchen.regionalIdentity || dish.kitchen.hometownRegion).filter(Boolean))],
     [dishes]
   );
-  const [region, setRegion] = useState(defaultRegion(liveRegionValues));
+  const [region, setRegion] = useState("Maharashtra"); // launch region, pinned by default
   const [cuisine, setCuisine] = useState(null); // null = all cuisines in the region
 
   const regionCuisines = cuisinesForRegion(region);

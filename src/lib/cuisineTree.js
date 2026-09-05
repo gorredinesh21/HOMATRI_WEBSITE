@@ -65,17 +65,6 @@ export function cuisinesForRegion(region) {
   return CUISINE_TREE.find((entry) => entry.region === region)?.cuisines || [];
 }
 
-// First region that actually has live kitchens (fallback: first region).
-export function defaultRegion(liveRegions = []) {
-  const live = new Set(liveRegions);
-  for (const entry of CUISINE_TREE) {
-    if (entry.cuisines.some((cuisine) => cuisine.liveValues.some((value) => live.has(value)))) {
-      return entry.region;
-    }
-  }
-  return ALL_REGIONS[0];
-}
-
 export const cuisineRequestUrl = (label) =>
   `https://wa.me/918369384157?text=${encodeURIComponent(
     `Hi Homatri! Please bring ${label} home kitchens to the platform — I'm waiting!`
