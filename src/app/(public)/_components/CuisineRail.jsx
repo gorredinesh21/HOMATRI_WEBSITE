@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { MessageCircle, Sparkles } from "lucide-react";
 import { kitchenPhotos } from "@/lib/visuals";
 import { ALL_REGIONS, CUISINE_TREE, cuisineRequestUrl } from "@/lib/cuisineTree";
@@ -23,6 +23,12 @@ export default function CuisineRail({ kitchens }) {
     [kitchens]
   );
   const [region, setRegion] = useState("Maharashtra"); // launch region, pinned by default
+
+  // /?region=South India#cuisines — deep-link from hero popular searches.
+  useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get("region");
+    if (requested && ALL_REGIONS.includes(requested)) setRegion(requested);
+  }, []);
 
   const cuisines = CUISINE_TREE.find((entry) => entry.region === region)?.cuisines || [];
 

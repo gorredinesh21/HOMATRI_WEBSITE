@@ -92,7 +92,7 @@ export default function Home() {
     <div className="min-h-screen flex flex-col">
       <Navbar />
       <main className="flex-1">
-        <Hero kitchens={kitchens} dishes={dishes} regions={regions} />
+        <Hero />
         <WhatsCooking dishes={dishes} activeTab={activeTab} onTabChange={setActiveTab} />
         <CuisineRail kitchens={kitchens} />
         <HometownBanner photos={collagePhotos} />
