@@ -42,10 +42,10 @@ function PhotoCarousel({ photos, alt }) {
 
   return (
     <div
-      data-photo-carousel
+      data-photo-carousel={count > 1 ? "multi" : undefined}
       className="relative h-72 bg-homatri-cream border-b border-homatri-border overflow-hidden select-none touch-pan-y"
-      onPointerDown={onPointerDown}
-      onPointerUp={onPointerUp}
+      onPointerDown={count > 1 ? onPointerDown : undefined}
+      onPointerUp={count > 1 ? onPointerUp : undefined}
     >
       {count > 1 ? (
         <div
@@ -150,8 +150,10 @@ export default function SwipeCardDeck({
   };
 
   const onPointerDown = (event) => {
-    // Swipes starting inside the photo carousel change photos, not cards.
-    if (event.target.closest?.("[data-photo-carousel]")) return;
+    // Only a MULTI-photo carousel owns horizontal swipes (photo paging).
+    // Single-photo cards let the swipe through to move the deck — otherwise
+    // swiping the photo (the most natural gesture) does nothing.
+    if (event.target.closest?.('[data-photo-carousel="multi"]')) return;
     startX.current = event.clientX;
     setIsDragging(true);
   };
