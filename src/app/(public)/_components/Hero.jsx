@@ -128,7 +128,7 @@ export default function Hero({ kitchens, dishes, regions }) {
                       <img
                         src={photo}
                         alt=""
-                        className="w-full h-52 object-cover rounded-xl"
+                        className="w-full h-52 object-cover object-top rounded-xl"
                         loading={index === 0 ? "eager" : "lazy"}
                       />
                     </div>

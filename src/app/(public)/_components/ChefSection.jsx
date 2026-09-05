@@ -43,7 +43,7 @@ export default function ChefSection({ kitchens }) {
                     <img
                       src={photo}
                       alt={`${kitchen.chefName} of ${kitchen.kitchenName}`}
-                      className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform"
+                      className="w-full h-full object-cover object-top group-hover:scale-[1.03] transition-transform"
                       loading="lazy"
                     />
                   ) : null}

@@ -76,7 +76,7 @@ export default function CuisineRail({ kitchens }) {
                       <span className="relative w-[92px] h-[92px] sm:w-24 sm:h-24 rounded-full overflow-hidden ring-[3px] ring-white shadow-md group-hover:ring-homatri-orange group-hover:scale-[1.04] transition-all">
                         {photo ? (
                           /* eslint-disable-next-line @next/next/no-img-element */
-                          <img src={photo} alt="" className="w-full h-full object-cover" loading="lazy" />
+                          <img src={photo} alt="" className="w-full h-full object-cover object-top" loading="lazy" />
                         ) : (
                           <span className="w-full h-full inline-flex items-center justify-center bg-homatri-forest-mist font-display text-2xl text-homatri-forest">
                             {cuisine.label.slice(0, 1)}

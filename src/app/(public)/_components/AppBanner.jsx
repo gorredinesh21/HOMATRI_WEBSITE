@@ -76,7 +76,7 @@ export default function AppBanner({ kitchens }) {
                         <img
                           src={photo}
                           alt={`${kitchen.chefName} of ${kitchen.kitchenName}`}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover object-top"
                           loading="lazy"
                         />
                       ) : null}

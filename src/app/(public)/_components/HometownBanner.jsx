@@ -46,7 +46,7 @@ export default function HometownBanner({ photos }) {
                   className={`absolute ${layout.className} ${layout.z} bg-white p-2 pb-7 rounded-2xl shadow-lg border border-homatri-border`}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={photo} alt="" className="w-full h-32 sm:h-40 object-cover rounded-xl" loading="lazy" />
+                  <img src={photo} alt="" className="w-full h-32 sm:h-40 object-cover object-top rounded-xl" loading="lazy" />
                 </div>
               );
             })}
