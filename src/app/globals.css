@@ -23,11 +23,11 @@
 }
 
 .gradient-hero {
-  background: linear-gradient(135deg, #E53A00 0%, #C43200 100%);
+  background: linear-gradient(135deg, #E8501E 0%, #C64212 100%);
 }
 
 .gradient-card {
-  background: linear-gradient(180deg, #FFFFFF 0%, #FBF9F6 100%);
+  background: linear-gradient(180deg, #FFFFFF 0%, #FDF8F0 100%);
 }
 
 /* Instagram-style heart burst on double-tap-to-like in the reels feed */

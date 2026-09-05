@@ -65,6 +65,8 @@ export default function OrderPortalPage() {
   useEffect(() => {
     const location = searchParams.get("location");
     if (location) setCluster(location);
+    const cuisineParam = searchParams.get("cuisine");
+    if (cuisineParam) setCuisine(cuisineParam);
   }, [searchParams, setCluster]);
 
   const loadKitchens = useCallback(async () => {
@@ -116,6 +118,11 @@ export default function OrderPortalPage() {
   useEffect(() => {
     setActiveIndex(0);
   }, [currentlyServing, mealFilter, dietary, cuisine, activeCluster]);
+
+  const regionOptions = useMemo(
+    () => [...new Set(kitchens.map((k) => k.regionalIdentity || k.hometownRegion).filter(Boolean))],
+    [kitchens]
+  );
 
   const selectedChef = openChefId
     ? kitchens.find((kitchen) => kitchen.chefId === openChefId || kitchen.chef_phone === openChefId)
@@ -271,6 +278,7 @@ export default function OrderPortalPage() {
             onDietaryChange={setDietary}
             cuisine={cuisine}
             onCuisineChange={setCuisine}
+            regions={regionOptions}
           />
           {kitchensStatus === "LOADING" ? (
             <div className="max-w-md mx-auto">

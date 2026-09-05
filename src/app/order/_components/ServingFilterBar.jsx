@@ -11,7 +11,9 @@ export default function ServingFilterBar({
   onDietaryChange,
   cuisine,
   onCuisineChange,
+  regions,
 }) {
+  const regionOptions = (regions && regions.length ? regions : REGIONAL_CUISINES);
   const mealOptions = [
     { id: "ALL", label: "All" },
     { id: "LUNCH", label: "Lunch (11:30 AM Cutoff)" },
@@ -69,9 +71,9 @@ export default function ServingFilterBar({
           className="text-xs font-semibold bg-white border border-homatri-border rounded-full px-3 py-1.5 text-homatri-dark"
         >
           <option value="">Regional cuisine</option>
-          {REGIONAL_CUISINES.map((region) => (
+          {regionOptions.map((region) => (
             <option key={region} value={region}>
-              {region}
+              {region.split(",")[0].trim()}
             </option>
           ))}
         </select>

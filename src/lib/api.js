@@ -237,6 +237,10 @@ export async function fetchPublicChefs() {
   return apiRequest("/api/v1/kitchens");
 }
 
+export async function fetchFeaturedReviews(limit = 6) {
+  return apiRequest(`/api/v1/reviews/featured?limit=${encodeURIComponent(limit)}`);
+}
+
 export async function fetchPublicReels() {
   return apiRequest("/api/v1/reels/feed");
 }

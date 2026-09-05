@@ -1,7 +1,9 @@
+// Live kitchen regions on the platform (must match chef_profiles.hometown_region).
 export const REGIONAL_CUISINES = [
-  "Aagri & Konkan",
-  "Malvani Coastal",
-  "Maharashtrian Special",
+  "Aagri Cuisine, Maharashtra",
+  "Aagri Food, Maharashtra",
+  "Maharashtrian Home Food",
+  "Malvani Coastal, Maharashtra",
 ];
 
 export const DIETARY_FILTERS = ["All", "100% Veg", "Non-Veg", "Jain"];
