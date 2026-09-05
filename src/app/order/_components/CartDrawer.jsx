@@ -140,7 +140,7 @@ export default function CartDrawer({
             <div className="flex-1 overflow-y-auto px-5 py-6">
               <div className="bg-white border border-homatri-border rounded-2xl p-5 space-y-4 text-center shadow-2xs">
                 <span className="inline-block bg-amber-100 text-amber-800 text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider">
-                  Test mode · ₹1 token payment
+                  Simulator · ₹{pendingPayment.tokenAmount} token payment
                 </span>
                 <div className="space-y-1.5 text-left bg-homatri-cream border border-homatri-border rounded-2xl p-4">
                   <div className="flex justify-between text-xs text-homatri-muted">
@@ -293,7 +293,7 @@ export default function CartDrawer({
                 <p className="text-xs font-extrabold text-homatri-dark">Payment Method</p>
                 {[
                   { id: "COD", label: "💵 Cash on Delivery", hint: "Pay the rider in cash when your tiffin arrives" },
-                  { id: "RAZORPAY", label: "🔒 Pay Online (Razorpay)", hint: "Test mode: pay ₹1 token now to confirm" },
+                  { id: "RAZORPAY", label: "🔒 Pay Online (Razorpay)", hint: "UPI, cards & netbanking — pay securely now" },
                 ].map((option) => (
                   <button
                     key={option.id}
@@ -325,7 +325,7 @@ export default function CartDrawer({
                 <span className="font-semibold text-homatri-dark">₹{subtotal}</span>
               </div>
               <div className="flex justify-between text-xs text-homatri-muted">
-                <span>Delivery Fee</span>
+                <span>Convenience Fee</span>
                 <span className="font-semibold text-homatri-dark">₹{deliveryFee}</span>
               </div>
               <div className="flex justify-between text-sm font-bold text-homatri-dark pt-1 border-t border-homatri-border">

@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { fetchOrder, orderStreamUrl, verifyOrderPayment } from "@/lib/api";
+import { fetchOrder, fetchOrderPayment, orderStreamUrl, verifyOrderPayment } from "@/lib/api";
+import { openRazorpayCheckout } from "@/lib/razorpay";
 
 const PIPELINE = ["PENDING_PAYMENT", "CONFIRMED", "BATCHED", "OUT_FOR_DELIVERY", "DELIVERED"];
 
@@ -126,6 +127,38 @@ export default function OrderTrackingPage() {
     setIsCompletingPayment(true);
     setPaymentError(null);
     try {
+      const info = await fetchOrderPayment(orderId, token);
+      if (info?.status === "PAID") {
+        setPaymentStatus("PAID");
+        setStatus("CONFIRMED");
+        setMessage("Payment received. Your order is confirmed.");
+        return;
+      }
+      if (info?.mode === "REAL" && info?.razorpay_order_id) {
+        // Real gateway: reopen the Razorpay checkout modal.
+        await openRazorpayCheckout({
+          payment: info,
+          orderId,
+          customerPhone: order?.customer_phone,
+          name: order?.customer_name,
+          verify: (response) =>
+            verifyOrderPayment(orderId, token, {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+            }),
+          onDone: async (result) => {
+            if (result?.ok) {
+              setPaymentStatus("PAID");
+              setStatus("CONFIRMED");
+              setMessage("Payment received. Your order is confirmed.");
+            }
+            setIsCompletingPayment(false);
+          },
+        });
+        return;
+      }
+      // Simulator (mock/token mode) confirmation.
       await verifyOrderPayment(orderId, token);
       setPaymentStatus("PAID");
       setStatus("CONFIRMED");
@@ -176,7 +209,7 @@ export default function OrderTrackingPage() {
               </p>
               {totalRupees != null ? (
                 <p className="text-xs text-amber-800">
-                  Order total ₹{Math.round(totalRupees)} · test mode: only ₹1 token is charged now.
+                  Pay ₹{Math.round(totalRupees)} securely via UPI, card or netbanking.
                 </p>
               ) : null}
               {paymentError ? (
@@ -188,7 +221,7 @@ export default function OrderTrackingPage() {
                 onClick={completePayment}
                 className="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 rounded-xl text-sm disabled:opacity-50"
               >
-                {isCompletingPayment ? "Verifying payment…" : "Complete payment (Pay ₹1 Securely)"}
+                {isCompletingPayment ? "Opening payment…" : totalRupees != null ? `Pay ₹${Math.round(totalRupees)} Securely` : "Complete Payment"}
               </button>
             </div>
           ) : null}

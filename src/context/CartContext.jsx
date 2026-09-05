@@ -2,12 +2,13 @@
 
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from "react";
 import { checkoutOrder, verifyOrderPayment, DELIVERY_FEE_DISPLAY } from "@/lib/api";
+import { openRazorpayCheckout } from "@/lib/razorpay";
 import { useAuth } from "@/context/AuthContext";
 
 const CartContext = createContext(null);
 
 export function CartProvider({ children }) {
-  const { token, customerPhone, requireAuthentication, isAuthenticated } = useAuth();
+  const { token, customerPhone, requireAuthentication, isAuthenticated, user } = useAuth();
   const [items, setItems] = useState([]);
   const [mealWindow, setMealWindowState] = useState(null);
   const [customNotes, setCustomNotes] = useState("");
@@ -126,6 +127,25 @@ export function CartProvider({ children }) {
     window.location.href = `/order/tracking?order_id=${encodeURIComponent(orderId)}`;
   };
 
+  // Real Razorpay Checkout modal. On success the handler posts the gateway ids +
+  // signature to verify-payment; on dismissal the order stays PENDING_PAYMENT and
+  // the customer lands on tracking where they can retry.
+  const openRealCheckout = async (payment, orderId) => {
+    await openRazorpayCheckout({
+      payment,
+      orderId,
+      customerPhone,
+      name: user?.name,
+      verify: (response) =>
+        verifyOrderPayment(orderId, token, {
+          razorpay_order_id: response.razorpay_order_id,
+          razorpay_payment_id: response.razorpay_payment_id,
+          razorpay_signature: response.razorpay_signature,
+        }),
+      onDone: () => routeToTracking(orderId),
+    });
+  };
+
   const beginCheckout = useCallback(async (deliveryAddress = null) => {
     if (!items.length) {
       setError("Your cart is empty.");
@@ -174,11 +194,18 @@ export function CartProvider({ children }) {
 
       if (result?.order_status === "PENDING_PAYMENT" || result?.payment_method === "RAZORPAY") {
         clearCart();
+        closeCart();
+        const payment = result?.payment;
+        if (payment?.mode === "REAL" && payment?.razorpay_order_id) {
+          await openRealCheckout(payment, orderId);
+          return result;
+        }
+        // Mock / token-mode simulator sheet.
         setPendingPayment({
           orderId,
-          orderTotal: result?.payment?.order_total_rupees ?? total,
-          tokenAmount: result?.payment?.amount_rupees ?? 1,
-          paymentLinkUrl: result?.payment?.payment_link_url || null,
+          orderTotal: payment?.order_total_rupees ?? total,
+          tokenAmount: payment?.amount_rupees ?? 1,
+          paymentLinkUrl: payment?.payment_link_url || null,
         });
         return result;
       }
@@ -202,6 +229,7 @@ export function CartProvider({ children }) {
     paymentMethod,
     token,
     customerPhone,
+    user,
     total,
     clearCart,
     closeCart,

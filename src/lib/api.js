@@ -17,7 +17,7 @@ async function apiWsOrigin() {
   return _wsOriginPromise;
 }
 
-export const DELIVERY_FEE_DISPLAY = 30;
+export const DELIVERY_FEE_DISPLAY = 11;
 
 async function parseJsonSafe(response) {
   const text = await response.text();
@@ -193,11 +193,27 @@ export async function checkoutOrder(payload, token) {
   });
 }
 
-export async function verifyOrderPayment(orderId, token) {
+export async function fetchOrderPayment(orderId, token) {
+  return apiRequest(`/api/v1/orders/${orderId}/payment`, {
+    method: "GET",
+    token,
+  });
+}
+
+export async function verifyOrderPayment(orderId, token, gateway = null) {
+  // gateway = Checkout.js success handler payload for real payments; the
+  // simulator path (mock/token mode) just confirms with simulate=true.
+  const body = gateway
+    ? {
+        razorpay_order_id: gateway.razorpay_order_id || null,
+        razorpay_payment_id: gateway.razorpay_payment_id || null,
+        razorpay_signature: gateway.razorpay_signature || null,
+      }
+    : { simulate: true };
   return apiRequest(`/api/v1/orders/${orderId}/verify-payment`, {
     method: "POST",
     token,
-    body: { simulate: true },
+    body,
   });
 }
 
