@@ -109,14 +109,15 @@ export default function Hero() {
             </div>
           </div>
 
-          <div className="relative">
+          <div className="relative lg:-mr-6 xl:-mr-14">
+            {/* Edges of this art fade to transparent so it melts into the cream page. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/hero-mothers.jpg"
+              src="/hero-mothers.webp"
               alt="The homemakers of Homatri — real home cooks from across India"
-              className="w-full h-[300px] sm:h-[380px] lg:h-[460px] object-cover rounded-3xl shadow-xl border border-homatri-border"
+              className="w-full h-auto"
             />
-            <span className="absolute bottom-4 left-4 inline-flex items-center gap-1.5 bg-white text-homatri-dark text-xs font-bold px-3.5 py-2 rounded-full shadow-lg border border-homatri-border">
+            <span className="absolute bottom-[12%] left-[14%] inline-flex items-center gap-1.5 bg-white text-homatri-dark text-xs font-bold px-3.5 py-2 rounded-full shadow-lg border border-homatri-border">
               <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
               4.8 loved by locals
             </span>
