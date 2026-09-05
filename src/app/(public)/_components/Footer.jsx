@@ -51,7 +51,7 @@ export default function Footer() {
             </div>
             <p className="mt-5 text-sm text-white/70 leading-relaxed">
               A managed home-food network around real homemakers. Verified kitchens, regional
-              soul food, pooled delivery at a flat ₹11 convenience fee.
+              soul food, pooled delivery straight to your door.
             </p>
             <p className="mt-4 inline-flex items-center gap-1.5 text-xs text-white/60">
               <MapPin className="w-3.5 h-3.5" /> Ghansoli, Navi Mumbai

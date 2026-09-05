@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, MapPin, ChefHat, UtensilsCrossed, Sparkles, Star, BadgeIndianRupee } from "lucide-react";
+import { Search, MapPin, ChefHat, UtensilsCrossed, Sparkles, Star } from "lucide-react";
 import { useLocation } from "@/context/LocationContext";
 import { kitchenPhotos } from "@/lib/visuals";
 
@@ -50,8 +50,8 @@ export default function Hero({ kitchens, dishes, regions }) {
 
             <p className="mt-6 text-base sm:text-lg text-homatri-muted leading-relaxed">
               Real homemakers from across India cook in their own kitchens — Aagri, Malvani,
-              Maharashtrian and more — and we pooled-deliver their fresh thalis to your door for a
-              flat ₹11 convenience fee.
+              Maharashtrian and more — and we pooled-deliver their fresh thalis straight to your
+              door.
             </p>
 
             <div className="mt-8 bg-white p-2.5 rounded-2xl shadow-md border border-homatri-border max-w-xl flex flex-col sm:flex-row items-center gap-2.5">
@@ -97,7 +97,7 @@ export default function Hero({ kitchens, dishes, regions }) {
                 { icon: ChefHat, value: kitchens.length, label: "home kitchens" },
                 { icon: UtensilsCrossed, value: dishes.length, label: "dishes today" },
                 { icon: MapPin, value: regions.length, label: "food regions" },
-                { icon: BadgeIndianRupee, value: "₹11", label: "flat fee" },
+                { icon: Star, value: "4.8★", label: "loved rating" },
               ].map(({ icon: Icon, value, label }) => (
                 <div key={label} className="bg-white/80 border border-homatri-border rounded-2xl px-4 py-3">
                   <dt className="flex items-center gap-1.5 text-[11px] font-medium text-homatri-muted uppercase tracking-wide">

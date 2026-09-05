@@ -48,19 +48,16 @@ export default function Home() {
     };
   }, []);
 
-  // Every dish currently on every live menu, carrying its kitchen + a real photo.
+  // Every dish currently on every live menu, carrying its kitchen.
   const dishes = useMemo(() => {
     const out = [];
     for (const kitchen of kitchens) {
-      const photos = kitchenPhotos(kitchen);
-      let photoIndex = 0;
       for (const item of kitchen.menuItems || []) {
         if (item.is_available === false || item.availability === "SOLD_OUT") continue;
         out.push({
           key: `${kitchen.chefId}-${item.menuItemId}`,
           item,
           kitchen,
-          photo: photos.length ? photos[photoIndex++ % photos.length] : null,
         });
       }
     }
@@ -97,13 +94,13 @@ export default function Home() {
       <main className="flex-1">
         <Hero kitchens={kitchens} dishes={dishes} regions={regions} />
         <WhatsCooking dishes={dishes} activeTab={activeTab} onTabChange={setActiveTab} />
-        <CuisineRail regions={regions} />
+        <CuisineRail kitchens={kitchens} />
         <HometownBanner photos={collagePhotos} />
         <ChefSection kitchens={kitchens} />
         <TrustPanel kitchens={kitchens} />
         <ConversionBanner />
         <Testimonials reviews={reviews} />
-        <AppBanner photos={collagePhotos.slice(0, 2)} />
+        <AppBanner kitchens={kitchens} />
       </main>
       <Footer />
       <CartDrawer

@@ -15,8 +15,8 @@ const DELIVERY_POINTS = [
   },
   {
     icon: BadgeIndianRupee,
-    title: "₹11, always",
-    body: "A flat ₹11 convenience fee on every order. No surge, no rain charge, no distance games.",
+    title: "You pay the cook, not a chain",
+    body: "No restaurant markup, no surge, no rain charge. Simple honest pricing, shown plainly at checkout.",
   },
 ];
 
@@ -54,11 +54,11 @@ export default function TrustPanel({ kitchens }) {
         <div className="mt-9 grid gap-5 lg:grid-cols-2">
           <article className="bg-white rounded-3xl border border-homatri-border p-6 sm:p-8">
             <h3 className="font-display text-xl sm:text-2xl font-medium text-homatri-dark">
-              Why is the fee only ₹11?
+              Why is home food so affordable?
             </h3>
             <p className="mt-2 text-sm text-homatri-muted leading-relaxed">
-              Because your neighbour&apos;s order rides with yours. Pooled delivery is how home
-              food stays affordable:
+              Because your neighbour&apos;s order rides with yours, and nothing stands between you
+              and the cook:
             </p>
             <ul className="mt-6 space-y-5">
               {DELIVERY_POINTS.map((point) => (

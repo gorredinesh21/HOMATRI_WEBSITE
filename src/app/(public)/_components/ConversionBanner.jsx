@@ -21,8 +21,7 @@ export default function ConversionBanner() {
           See What&apos;s Cooking Today <ArrowRight className="w-4 h-4" />
         </Link>
         <p className="mt-5 inline-flex items-center gap-1.5 text-[11px] text-white/60">
-          <Clock className="w-3.5 h-3.5" /> Lunch by 11:30 AM · Dinner by 6:30 PM · ₹11 flat
-          convenience fee
+          <Clock className="w-3.5 h-3.5" /> Lunch by 11:30 AM · Dinner by 6:30 PM · sealed tiffins
         </p>
       </div>
     </section>
