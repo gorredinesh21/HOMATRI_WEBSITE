@@ -124,6 +124,7 @@ export default function SwipeCardDeck({
 }) {
   const [dragX, setDragX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [hasSwipedOnce, setHasSwipedOnce] = useState(false);
   const startX = useRef(0);
   const current = kitchens[activeIndex] || null;
 
@@ -138,6 +139,7 @@ export default function SwipeCardDeck({
   const finishDrag = (delta) => {
     setIsDragging(false);
     setDragX(0);
+    setHasSwipedOnce(true);
     if (delta > 80) {
       onSwipeRight?.(current?.chefId);
       onNext?.();
@@ -177,17 +179,38 @@ export default function SwipeCardDeck({
           const isTop = stackIndex === 0;
           const translate = isTop ? dragX : 0;
           const rotate = isTop ? dragX / 18 : 0;
+          // Tinder-style floating stack: the next cards peek out on BOTH sides,
+          // slightly rotated — so it's obvious there are more cards to swipe.
+          const stackFloat =
+            stackIndex === 1
+              ? "rotate-[3deg] translate-x-5 translate-y-3"
+              : stackIndex === 2
+              ? "-rotate-[2.5deg] -translate-x-5 translate-y-6"
+              : "";
           return (
             <article
               key={kitchen.chefId}
-              className="absolute inset-0 rounded-3xl overflow-hidden border border-homatri-border bg-white shadow-lg"
+              className={`absolute inset-0 rounded-3xl overflow-hidden border border-homatri-border bg-white shadow-2xl ${stackFloat} ${
+                isTop && !hasSwipedOnce ? "reel-card-wiggle" : ""
+              }`}
               style={{
-                transform: `translateX(${translate}px) rotate(${rotate}deg) scale(${1 - stackIndex * 0.04}) translateY(${stackIndex * 12}px)`,
+                transform: isTop ? `translateX(${translate}px) rotate(${rotate}deg)` : undefined,
                 zIndex: 10 - stackIndex,
-                opacity: 1 - stackIndex * 0.08,
-                transition: isDragging && isTop ? "none" : "transform 200ms ease",
+                opacity: 1 - stackIndex * 0.12,
+                transition: isDragging && isTop ? "none" : "transform 250ms cubic-bezier(0.22, 1, 0.36, 1)",
               }}
             >
+              {/* Drag direction feedback — Tinder-style labels */}
+              {isTop && dragX > 40 ? (
+                <span className="absolute top-4 left-4 z-20 rotate-[-8deg] bg-homatri-green text-white font-black text-lg px-3 py-1 rounded-xl border-2 border-white/60 shadow-lg tracking-wider">
+                  NEXT →
+                </span>
+              ) : null}
+              {isTop && dragX < -40 ? (
+                <span className="absolute top-4 right-4 z-20 rotate-[8deg] bg-homatri-orange text-white font-black text-lg px-3 py-1 rounded-xl border-2 border-white/60 shadow-lg tracking-wider">
+                  ← PREVIOUS
+                </span>
+              ) : null}
               <PhotoCarousel photos={kitchenPhotos(kitchen)} alt={kitchen.kitchenName} />
               <div className="p-5 space-y-3">
                 <div className="flex items-start justify-between gap-3">
@@ -247,11 +270,25 @@ export default function SwipeCardDeck({
         })}
       </div>
 
-      <div className="hidden md:flex items-center justify-center gap-4 mt-4">
+      {/* Swipe teacher — always visible until the user swipes once */}
+      {!hasSwipedOnce ? (
+        <div className="flex items-center justify-center gap-2 mt-3 animate-pulse">
+          <ChevronLeft className="w-4 h-4 text-homatri-muted" />
+          <span className="text-[11px] font-bold uppercase tracking-widest text-homatri-muted">
+            Swipe the card — right for next, left for previous
+          </span>
+          <ChevronRight className="w-4 h-4 text-homatri-muted" />
+        </div>
+      ) : null}
+
+      <div className="flex items-center justify-center gap-4 mt-4">
         <button
           type="button"
-          onClick={onPrevious}
-          className="w-11 h-11 rounded-full border border-homatri-border bg-white flex items-center justify-center"
+          onClick={() => {
+            setHasSwipedOnce(true);
+            onPrevious?.();
+          }}
+          className="w-11 h-11 rounded-full border border-homatri-border bg-white flex items-center justify-center shadow-sm hover:shadow"
           aria-label="Previous kitchen"
         >
           <ChevronLeft className="w-5 h-5" />
@@ -261,8 +298,11 @@ export default function SwipeCardDeck({
         </span>
         <button
           type="button"
-          onClick={onNext}
-          className="w-11 h-11 rounded-full border border-homatri-border bg-white flex items-center justify-center"
+          onClick={() => {
+            setHasSwipedOnce(true);
+            onNext?.();
+          }}
+          className="w-11 h-11 rounded-full border border-homatri-border bg-white flex items-center justify-center shadow-sm hover:shadow"
           aria-label="Next kitchen"
         >
           <ChevronRight className="w-5 h-5" />
