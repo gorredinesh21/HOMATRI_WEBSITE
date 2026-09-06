@@ -1,12 +1,12 @@
 "use client";
 
-// Zomato-style floating cart: draggable bubble → scrollable bill popup with
-// address (Google map picker) and payment (Razorpay default / COD) inside the
-// same popup. Login is requested only at Pay. After payment the customer is
-// routed to the tracking page.
+// Uber/Rapido-driver-style floating cart widget: a draggable circle that
+// EXPANDS IN PLACE into a bill panel when tapped and collapses back when
+// tapped again. No modal, no backdrop, no slide-in — the page behind stays
+// fully interactive while the widget is open.
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CreditCard, MapPin, Minus, Plus, ShoppingBag, Truck, Wallet, X } from "lucide-react";
+import { ChevronDown, CreditCard, MapPin, Minus, Plus, ShoppingBag, Truck, Wallet, X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { useLocation } from "@/context/LocationContext";
@@ -135,8 +135,8 @@ function AddressPopup({ onClose, onSaved }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4">
-      <div className="w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl max-h-[88dvh] flex flex-col">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 p-4">
+      <div className="w-full max-w-md bg-white rounded-3xl max-h-[88dvh] flex flex-col shadow-2xl">
         <div className="flex items-center justify-between p-4 border-b border-homatri-border shrink-0">
           <h3 className="font-display text-lg font-medium text-homatri-dark">Delivery location</h3>
           <button type="button" onClick={onClose} aria-label="Close" className="p-1">
@@ -224,9 +224,9 @@ function AddressPopup({ onClose, onSaved }) {
   );
 }
 
-/* ---------------- Cart popup (bill + address + payment) ---------------- */
+/* ---------------- Expanding cart panel (anchored to the bubble) ---------------- */
 
-function CartPopup({ onClose }) {
+function CartPanel({ address, setAddress, onCollapse }) {
   const {
     items,
     updateQuantity,
@@ -240,10 +240,9 @@ function CartPopup({ onClose }) {
     setPaymentMethod,
     beginCheckout,
   } = useCart();
-  const { requireAuthentication, token } = useAuth();
+  const { requireAuthentication } = useAuth();
   const { activeCluster } = useLocation();
   const [addressOpen, setAddressOpen] = useState(false);
-  const [address, setAddress] = useState(null);
 
   const fullAddress = address
     ? {
@@ -269,149 +268,152 @@ function CartPopup({ onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4">
-      <div className="w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl max-h-[90dvh] flex flex-col">
-        <div className="flex items-center justify-between p-4 border-b border-homatri-border shrink-0">
-          <div>
-            <h3 className="font-display text-lg font-medium text-homatri-dark">Your order</h3>
-            <p className="text-[11px] text-homatri-muted">{items[0]?.kitchenName || ""}</p>
-          </div>
-          <button type="button" onClick={onClose} aria-label="Close" className="p-1">
-            <X className="w-5 h-5 text-homatri-muted" />
-          </button>
+    <div className="w-[min(92vw,360px)] max-h-[72dvh] bg-white rounded-3xl border border-homatri-border shadow-2xl flex flex-col overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-homatri-border bg-homatri-cream shrink-0">
+        <div className="min-w-0">
+          <p className="text-sm font-display font-medium text-homatri-dark truncate">Your order</p>
+          <p className="text-[10px] text-homatri-muted truncate">{items[0]?.kitchenName || ""}</p>
         </div>
+        <button
+          type="button"
+          onClick={onCollapse}
+          aria-label="Collapse cart"
+          className="p-1.5 rounded-full hover:bg-homatri-sand"
+        >
+          <ChevronDown className="w-4 h-4 text-homatri-muted" />
+        </button>
+      </div>
 
-        <div className="overflow-y-auto p-4 space-y-4">
-          {/* Items */}
-          <ul className="divide-y divide-homatri-border/70">
-            {items.map((line) => (
-              <li key={line.menuItemId} className="py-2.5 flex items-center gap-3">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-homatri-dark truncate">{line.itemName}</p>
-                  <p className="text-[11px] text-homatri-muted">
-                    ₹{line.unitPriceDisplay} × {line.quantity}
-                  </p>
-                  {line.customNote ? (
-                    <p className="text-[10px] text-homatri-orange">“{line.customNote}”</p>
-                  ) : null}
-                </div>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <button
-                    type="button"
-                    aria-label="Less"
-                    onClick={() =>
-                      line.quantity <= 1
-                        ? removeItem(line.menuItemId)
-                        : updateQuantity(line.menuItemId, line.quantity - 1)
-                    }
-                    className="w-7 h-7 rounded-lg border border-homatri-border flex items-center justify-center"
-                  >
-                    <Minus className="w-3.5 h-3.5" />
-                  </button>
-                  <span className="w-5 text-center text-sm font-bold">{line.quantity}</span>
-                  <button
-                    type="button"
-                    aria-label="More"
-                    onClick={() => updateQuantity(line.menuItemId, line.quantity + 1)}
-                    className="w-7 h-7 rounded-lg border border-homatri-border flex items-center justify-center"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-                <span className="w-14 text-right text-sm font-bold text-homatri-dark shrink-0">
-                  ₹{Math.round(line.unitPriceDisplay * line.quantity)}
-                </span>
-              </li>
-            ))}
-          </ul>
-
-          {/* Bill breakdown */}
-          <div className="bg-homatri-cream rounded-2xl p-3.5 space-y-1.5">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-homatri-muted">Bill details</p>
-            <div className="flex justify-between text-xs text-homatri-dark">
-              <span>Items subtotal</span>
-              <span className="font-semibold">₹{Math.round(subtotal)}</span>
-            </div>
-            <div className="flex justify-between text-xs text-homatri-dark">
-              <span>Convenience fee</span>
-              <span className="font-semibold">₹{items.length ? Math.round(deliveryFee) : 0}</span>
-            </div>
-            <div className="flex justify-between text-sm font-bold text-homatri-dark pt-1.5 border-t border-homatri-border">
-              <span>To pay</span>
-              <span>₹{Math.round(total)}</span>
-            </div>
-          </div>
-
-          {/* Address */}
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-homatri-muted mb-1.5">Deliver to</p>
-            {fullAddress ? (
-              <button
-                type="button"
-                onClick={() => setAddressOpen(true)}
-                className="w-full text-left border border-homatri-border rounded-2xl p-3 hover:border-homatri-forest"
-              >
-                <p className="text-sm font-bold text-homatri-dark">{fullAddress.fullAddress}</p>
-                <p className="text-xs text-homatri-muted mt-0.5">
-                  📞 {fullAddress.phone} · {activeCluster} · tap to change
+      <div className="overflow-y-auto p-3.5 space-y-3.5">
+        {/* Items */}
+        <ul className="divide-y divide-homatri-border/70">
+          {items.map((line) => (
+            <li key={line.menuItemId} className="py-2 flex items-center gap-2.5">
+              <div className="flex-1 min-w-0">
+                <p className="text-[13px] font-bold text-homatri-dark truncate">{line.itemName}</p>
+                <p className="text-[10px] text-homatri-muted">
+                  ₹{line.unitPriceDisplay} × {line.quantity}
                 </p>
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setAddressOpen(true)}
-                className="w-full border border-dashed border-homatri-forest/40 text-homatri-forest text-sm font-bold py-3 rounded-2xl hover:bg-homatri-forest-mist inline-flex items-center justify-center gap-2"
-              >
-                <MapPin className="w-4 h-4" /> Choose location on map
-              </button>
-            )}
-          </div>
+                {line.customNote ? (
+                  <p className="text-[10px] text-homatri-orange">“{line.customNote}”</p>
+                ) : null}
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  type="button"
+                  aria-label="Less"
+                  onClick={() =>
+                    line.quantity <= 1
+                      ? removeItem(line.menuItemId)
+                      : updateQuantity(line.menuItemId, line.quantity - 1)
+                  }
+                  className="w-6 h-6 rounded-md border border-homatri-border flex items-center justify-center"
+                >
+                  <Minus className="w-3 h-3" />
+                </button>
+                <span className="w-4 text-center text-xs font-bold">{line.quantity}</span>
+                <button
+                  type="button"
+                  aria-label="More"
+                  onClick={() => updateQuantity(line.menuItemId, line.quantity + 1)}
+                  className="w-6 h-6 rounded-md border border-homatri-border flex items-center justify-center"
+                >
+                  <Plus className="w-3 h-3" />
+                </button>
+              </div>
+              <span className="w-12 text-right text-[13px] font-bold text-homatri-dark shrink-0">
+                ₹{Math.round(line.unitPriceDisplay * line.quantity)}
+              </span>
+            </li>
+          ))}
+        </ul>
 
-          {/* Payment */}
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-homatri-muted mb-1.5">Payment</p>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setPaymentMethod("RAZORPAY")}
-                className={`border rounded-2xl p-3 text-left ${
-                  paymentMethod === "RAZORPAY"
-                    ? "border-homatri-orange bg-homatri-orange-light"
-                    : "border-homatri-border"
-                }`}
-              >
-                <CreditCard className="w-4 h-4 text-homatri-orange mb-1" />
-                <p className="text-xs font-bold text-homatri-dark">Pay online</p>
-                <p className="text-[10px] text-homatri-muted">UPI · cards · netbanking</p>
-              </button>
-              <button
-                type="button"
-                onClick={() => setPaymentMethod("COD")}
-                className={`border rounded-2xl p-3 text-left ${
-                  paymentMethod === "COD" ? "border-homatri-forest bg-homatri-forest-mist" : "border-homatri-border"
-                }`}
-              >
-                <Wallet className="w-4 h-4 text-homatri-forest mb-1" />
-                <p className="text-xs font-bold text-homatri-dark">Cash on delivery</p>
-                <p className="text-[10px] text-homatri-muted">Pay the rider</p>
-              </button>
-            </div>
+        {/* Bill breakdown */}
+        <div className="bg-homatri-cream rounded-2xl p-3 space-y-1">
+          <p className="text-[9px] font-bold uppercase tracking-widest text-homatri-muted">Bill details</p>
+          <div className="flex justify-between text-[11px] text-homatri-dark">
+            <span>Items subtotal</span>
+            <span className="font-semibold">₹{Math.round(subtotal)}</span>
           </div>
-
-          {error ? <p className="text-xs text-red-600 font-medium">{error}</p> : null}
+          <div className="flex justify-between text-[11px] text-homatri-dark">
+            <span>Convenience fee</span>
+            <span className="font-semibold">₹{items.length ? Math.round(deliveryFee) : 0}</span>
+          </div>
+          <div className="flex justify-between text-[13px] font-bold text-homatri-dark pt-1 border-t border-homatri-border">
+            <span>To pay</span>
+            <span>₹{Math.round(total)}</span>
+          </div>
         </div>
 
-        <div className="p-4 border-t border-homatri-border shrink-0">
-          <button
-            type="button"
-            onClick={pay}
-            disabled={isSubmitting || !items.length}
-            className="w-full bg-homatri-orange hover:bg-homatri-orange-dark text-white font-extrabold py-3.5 rounded-2xl text-sm shadow-md disabled:opacity-50 uppercase tracking-wider inline-flex items-center justify-center gap-2"
-          >
-            <Truck className="w-4 h-4" />
-            {isSubmitting ? "Placing order…" : `Pay ₹${Math.round(total)}${paymentMethod === "COD" ? " on delivery" : ""}`}
-          </button>
+        {/* Address */}
+        <div>
+          <p className="text-[9px] font-bold uppercase tracking-widest text-homatri-muted mb-1">Deliver to</p>
+          {fullAddress ? (
+            <button
+              type="button"
+              onClick={() => setAddressOpen(true)}
+              className="w-full text-left border border-homatri-border rounded-xl p-2.5 hover:border-homatri-forest"
+            >
+              <p className="text-xs font-bold text-homatri-dark line-clamp-1">{fullAddress.fullAddress}</p>
+              <p className="text-[10px] text-homatri-muted">
+                📞 {fullAddress.phone} · {activeCluster} · tap to change
+              </p>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setAddressOpen(true)}
+              className="w-full border border-dashed border-homatri-forest/40 text-homatri-forest text-xs font-bold py-2.5 rounded-xl hover:bg-homatri-forest-mist inline-flex items-center justify-center gap-1.5"
+            >
+              <MapPin className="w-3.5 h-3.5" /> Choose location on map
+            </button>
+          )}
         </div>
+
+        {/* Payment */}
+        <div>
+          <p className="text-[9px] font-bold uppercase tracking-widest text-homatri-muted mb-1">Payment</p>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setPaymentMethod("RAZORPAY")}
+              className={`border rounded-xl p-2 text-left ${
+                paymentMethod === "RAZORPAY"
+                  ? "border-homatri-orange bg-homatri-orange-light"
+                  : "border-homatri-border"
+              }`}
+            >
+              <CreditCard className="w-3.5 h-3.5 text-homatri-orange mb-0.5" />
+              <p className="text-[11px] font-bold text-homatri-dark leading-tight">Pay online</p>
+              <p className="text-[9px] text-homatri-muted leading-tight">UPI · cards</p>
+            </button>
+            <button
+              type="button"
+              onClick={() => setPaymentMethod("COD")}
+              className={`border rounded-xl p-2 text-left ${
+                paymentMethod === "COD" ? "border-homatri-forest bg-homatri-forest-mist" : "border-homatri-border"
+              }`}
+            >
+              <Wallet className="w-3.5 h-3.5 text-homatri-forest mb-0.5" />
+              <p className="text-[11px] font-bold text-homatri-dark leading-tight">Cash</p>
+              <p className="text-[9px] text-homatri-muted leading-tight">Pay the rider</p>
+            </button>
+          </div>
+        </div>
+
+        {error ? <p className="text-[11px] text-red-600 font-medium">{error}</p> : null}
+      </div>
+
+      <div className="p-3 border-t border-homatri-border shrink-0">
+        <button
+          type="button"
+          onClick={pay}
+          disabled={isSubmitting || !items.length}
+          className="w-full bg-homatri-orange hover:bg-homatri-orange-dark text-white font-extrabold py-3 rounded-2xl text-[13px] shadow-md disabled:opacity-50 uppercase tracking-wider inline-flex items-center justify-center gap-1.5"
+        >
+          <Truck className="w-4 h-4" />
+          {isSubmitting ? "Placing order…" : `Pay ₹${Math.round(total)}${paymentMethod === "COD" ? " on delivery" : ""}`}
+        </button>
       </div>
 
       {addressOpen ? (
@@ -424,20 +426,26 @@ function CartPopup({ onClose }) {
   );
 }
 
-/* ---------------- Draggable bubble ---------------- */
+/* ---------------- Draggable circle that expands in place ---------------- */
 
 export default function CartBubble() {
   const { items, total } = useCart();
-  const [open, setOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [address, setAddress] = useState(null);
   const count = items.reduce((sum, line) => sum + (Number(line.quantity) || 0), 0);
 
-  // Draggable position (percentage-based so it survives resizes).
   const [pos, setPos] = useState(() =>
     typeof window !== "undefined" && window.innerWidth < 640
       ? { x: window.innerWidth - 84, y: window.innerHeight * 0.62 }
       : { x: (typeof window !== "undefined" ? window.innerWidth : 1200) - 100, y: 380 }
   );
   const dragState = useRef(null);
+
+  useEffect(() => {
+    const open = () => setExpanded(true);
+    window.addEventListener("homatri:open-cart", open);
+    return () => window.removeEventListener("homatri:open-cart", open);
+  }, []);
 
   const onPointerDown = (event) => {
     dragState.current = { startX: event.clientX, startY: event.clientY, origX: pos.x, origY: pos.y, moved: false };
@@ -451,35 +459,59 @@ export default function CartBubble() {
     setPos({ x: dragState.current.origX + dx, y: dragState.current.origY + dy });
   };
   const onPointerUp = () => {
-    if (dragState.current && !dragState.current.moved) setOpen(true);
+    if (dragState.current && !dragState.current.moved) setExpanded((prev) => !prev);
     dragState.current = null;
   };
 
-  useEffect(() => {
-    const open = () => setOpen(true);
-    window.addEventListener("homatri:open-cart", open);
-    return () => window.removeEventListener("homatri:open-cart", open);
-  }, []);
-
   if (!count) return null;
+
+  // Panel opens toward wherever there is more room, anchored to the bubble.
+  const vw = typeof window !== "undefined" ? window.innerWidth : 1200;
+  const vh = typeof window !== "undefined" ? window.innerHeight : 800;
+  const panelWidth = Math.min(vw * 0.92, 360);
+  const openUpward = pos.y > vh * 0.5;
+  const panelStyle = openUpward
+    ? {
+        left: Math.min(Math.max(pos.x - panelWidth + 56, 8), vw - panelWidth - 8),
+        bottom: Math.max(vh - pos.y + 60, 8),
+        transformOrigin: "bottom right",
+      }
+    : {
+        left: Math.min(Math.max(pos.x - panelWidth + 56, 8), vw - panelWidth - 8),
+        top: pos.y + 60,
+        transformOrigin: "top right",
+      };
 
   return (
     <>
+      {/* Expanding panel — anchored to the bubble, no backdrop */}
+      {expanded ? (
+        <div className="fixed z-[55]" style={panelStyle}>
+          <CartPanel address={address} setAddress={setAddress} onCollapse={() => setExpanded(false)} />
+        </div>
+      ) : null}
+
+      {/* The circle itself — tap to expand/collapse, drag to move */}
       <button
         type="button"
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
-        aria-label={`Open cart with ${count} items`}
+        aria-label={`${expanded ? "Collapse" : "Open"} cart with ${count} items`}
+        aria-expanded={expanded}
         style={{ left: pos.x, top: pos.y }}
-        className="fixed z-50 flex items-center gap-2 bg-homatri-orange text-white pl-3 pr-4 py-2.5 rounded-full shadow-2xl border-2 border-white/60 touch-none select-none cursor-pointer"
+        className={`fixed z-[56] flex items-center gap-2 text-white rounded-full shadow-2xl border-2 border-white/60 touch-none select-none cursor-pointer transition-colors ${
+          expanded ? "bg-homatri-forest pr-4 pl-3 py-2.5" : "bg-homatri-orange pl-3 pr-4 py-2.5"
+        }`}
       >
-        <ShoppingBag className="w-5 h-5" />
+        {expanded ? (
+          <ChevronDown className="w-5 h-5" />
+        ) : (
+          <ShoppingBag className="w-5 h-5" />
+        )}
         <span className="text-sm font-black">{count}</span>
         <span className="text-xs font-bold opacity-90">· ₹{Math.round(total)}</span>
       </button>
-
-      {open ? <CartPopup onClose={() => setOpen(false)} /> : null}
     </>
   );
 }
