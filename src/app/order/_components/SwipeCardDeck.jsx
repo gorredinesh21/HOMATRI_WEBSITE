@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Star, ShieldCheck } from "lucide-react";
+import { ChevronLeft, ChevronRight, ShieldCheck, UtensilsCrossed } from "lucide-react";
 
 const isPhotoUrl = (url) => /\.(jpe?g|png|webp|gif)(\?|$)/i.test(String(url || ""));
 
@@ -43,7 +43,7 @@ function PhotoCarousel({ photos, alt }) {
   return (
     <div
       data-photo-carousel={count > 1 ? "multi" : undefined}
-      className="relative h-72 bg-homatri-cream border-b border-homatri-border overflow-hidden select-none touch-pan-y"
+      className="relative h-44 bg-homatri-cream border-b border-homatri-border overflow-hidden select-none touch-pan-y"
       onPointerDown={count > 1 ? onPointerDown : undefined}
       onPointerUp={count > 1 ? onPointerUp : undefined}
     >
@@ -121,6 +121,8 @@ export default function SwipeCardDeck({
   onSwipeRight,
   onNext,
   onPrevious,
+  onOrderItem,
+  cartItems = [],
 }) {
   const [dragX, setDragX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -171,7 +173,7 @@ export default function SwipeCardDeck({
   return (
     <div className="relative max-w-md mx-auto">
       <div
-        className="relative h-[560px] touch-pan-y"
+        className="relative h-[620px] touch-pan-y"
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
@@ -213,57 +215,106 @@ export default function SwipeCardDeck({
                   ← PREVIOUS
                 </span>
               ) : null}
-              <PhotoCarousel photos={kitchenPhotos(kitchen)} alt={kitchen.kitchenName} />
-              <div className="p-5 space-y-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-homatri-orange">
+              <div className="h-full flex flex-col">
+                <div className="shrink-0">
+                  <PhotoCarousel photos={kitchenPhotos(kitchen)} alt={kitchen.kitchenName} />
+                </div>
+                <div className="px-4 pt-3 pb-2 shrink-0 flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-homatri-orange truncate">
                       {kitchen.regionalIdentity}
                     </p>
-                    <h3 className="font-display text-xl font-medium text-homatri-dark leading-tight">
+                    <h3 className="font-display text-lg font-medium text-homatri-dark leading-tight truncate">
                       {kitchen.kitchenName}
                     </h3>
-                    <p className="text-sm text-homatri-muted">{kitchen.chefName}</p>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      {kitchen.isCurrentlyServing ? (
+                        <span className="bg-homatri-green-light text-homatri-green px-2 py-0.5 rounded-full text-[10px] font-bold">
+                          Serving now
+                        </span>
+                      ) : (
+                        <span className="bg-homatri-cream text-homatri-muted px-2 py-0.5 rounded-full text-[10px] font-bold">
+                          Window closed
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => onCardOpen?.(kitchen.chefId)}
+                        className="text-[10px] font-bold text-homatri-orange hover:underline"
+                      >
+                        Full profile ↗
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1 bg-amber-50 text-amber-700 px-2 py-1 rounded-lg text-xs font-bold">
-                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                    {kitchen.rating ?? "—"}
-                  </div>
-                </div>
-                <p className="text-sm text-homatri-dark">
-                  <span className="text-homatri-muted">Today&apos;s special: </span>
-                  <strong>{kitchen.signatureDish || "Chef&apos;s tiffin"}</strong>
-                  {kitchen.pricePreview != null ? ` · ₹${kitchen.pricePreview}` : ""}
-                </p>
-                <div className="flex items-center gap-2 text-xs">
                   {kitchen.isVerified ? (
-                    <span className="inline-flex items-center gap-1 text-homatri-green font-semibold">
-                      <ShieldCheck className="w-3.5 h-3.5" /> Verified kitchen
+                    <span className="shrink-0 inline-flex items-center gap-1 text-[10px] font-bold text-homatri-green">
+                      <ShieldCheck className="w-3.5 h-3.5" /> Verified
                     </span>
                   ) : null}
-                  {kitchen.isCurrentlyServing ? (
-                    <span className="bg-homatri-green-light text-homatri-green px-2 py-0.5 rounded-full font-semibold">
-                      Serving now
-                    </span>
-                  ) : (
-                    <span className="bg-homatri-cream text-homatri-muted px-2 py-0.5 rounded-full font-semibold">
-                      Window closed
-                    </span>
-                  )}
                 </div>
-                <div className="space-y-2 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => onCardOpen?.(kitchen.chefId)}
-                    className="w-full bg-homatri-orange hover:bg-homatri-orange-dark text-white font-bold py-3 rounded-xl text-sm"
-                  >
-                    Open profile & menu
-                  </button>
+
+                {/* Zomato-style compact menu — scrolls inside the card */}
+                <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-3" data-menu-scroll>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-homatri-muted mb-1.5 sticky top-0 bg-white pt-1">
+                    Menu · tap + to add
+                  </p>
+                  <ul className="divide-y divide-homatri-border/70">
+                    {(kitchen.menuItems || []).map((item) => {
+                      const inCart = cartItems.find((line) => line.menuItemId === item.menuItemId);
+                      const isNonVeg = /NON/i.test(String(item.dietaryTag || ""));
+                      return (
+                        <li key={item.menuItemId} className="py-2.5 flex items-start gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <span
+                                className={`w-3 h-3 rounded-sm border-2 flex items-center justify-center ${
+                                  isNonVeg ? "border-red-700" : "border-green-700"
+                                }`}
+                              >
+                                <span className={`w-1 h-1 rounded-full ${isNonVeg ? "bg-red-700" : "bg-green-700"}`} />
+                              </span>
+                              <p className="text-[13px] font-bold text-homatri-dark leading-snug truncate">
+                                {item.itemName}
+                              </p>
+                            </div>
+                            {item.description ? (
+                              <p className="text-[10px] text-homatri-muted leading-snug mt-0.5 line-clamp-2">
+                                {item.description}
+                              </p>
+                            ) : null}
+                            <p className="text-[13px] font-bold text-homatri-dark mt-1">₹{Math.round(item.price)}</p>
+                          </div>
+                          <div className="shrink-0 flex flex-col items-center gap-1.5">
+                            <span className="w-12 h-12 rounded-xl border border-dashed border-homatri-forest/30 bg-homatri-forest-mist flex items-center justify-center overflow-hidden">
+                              {item.imageUrl ? (
+                                /* eslint-disable-next-line @next/next/no-img-element */
+                                <img src={item.imageUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
+                              ) : (
+                                <UtensilsCrossed className="w-4 h-4 text-homatri-forest/40" />
+                              )}
+                            </span>
+                            {inCart ? (
+                              <span className="text-[10px] font-bold text-homatri-forest">{inCart.quantity} in cart</span>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => onOrderItem?.(item.menuItemId, 1, null, { item, chef: kitchen })}
+                                disabled={item.is_available === false}
+                                className="bg-homatri-orange hover:bg-homatri-orange-dark text-white text-[11px] font-bold py-1 px-3.5 rounded-lg border border-homatri-orange-dark/20 disabled:opacity-40"
+                              >
+                                ADD +
+                              </button>
+                            )}
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
                   <a
                     href={`/bulk?chef=${encodeURIComponent(kitchen.chefName || kitchen.kitchenName)}`}
-                    className="block w-full bg-slate-900 hover:bg-black text-white font-bold py-2.5 rounded-xl text-xs text-center uppercase tracking-wider"
+                    className="mt-3 block text-center text-[10px] font-bold text-homatri-muted hover:text-homatri-orange"
                   >
-                    📦 Request Bulk Catering from {kitchen.chefName || "Chef"} ➔
+                    Need bulk catering from this kitchen? ➔
                   </a>
                 </div>
               </div>

@@ -12,15 +12,10 @@ import ConversionBanner from "./_components/ConversionBanner";
 import Testimonials from "./_components/Testimonials";
 import AppBanner from "./_components/AppBanner";
 import Footer from "./_components/Footer";
-import CartDrawer from "@/app/order/_components/CartDrawer";
-import { useAuth } from "@/context/AuthContext";
-import { useCart } from "@/context/CartContext";
 import { fetchFeaturedReviews, fetchPublicChefs } from "@/lib/api";
 import { isPhotoUrl, kitchenPhotos, regionLabel } from "@/lib/visuals";
 
 export default function Home() {
-  const { requireAuthentication } = useAuth();
-  const { items, isOpen, closeCart, beginCheckout, deliveryFee, error } = useCart();
   const [kitchens, setKitchens] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [activeTab, setActiveTab] = useState("LUNCH");
@@ -49,16 +44,31 @@ export default function Home() {
   }, []);
 
   // Every dish currently on every live menu, carrying its kitchen.
+  // Interleaved round-robin across kitchens so every cuisine is visible
+  // at once instead of one kitchen's full menu followed by the next.
   const dishes = useMemo(() => {
-    const out = [];
+    const byKitchen = [];
     for (const kitchen of kitchens) {
+      const list = [];
       for (const item of kitchen.menuItems || []) {
         if (item.is_available === false || item.availability === "SOLD_OUT") continue;
-        out.push({
+        list.push({
           key: `${kitchen.chefId}-${item.menuItemId}`,
           item,
           kitchen,
         });
+      }
+      if (list.length) byKitchen.push(list);
+    }
+    const out = [];
+    let added = true;
+    while (added) {
+      added = false;
+      for (const list of byKitchen) {
+        if (list.length) {
+          out.push(list.shift());
+          added = true;
+        }
       }
     }
     return out;
@@ -103,15 +113,6 @@ export default function Home() {
         <AppBanner kitchens={kitchens} />
       </main>
       <Footer />
-      <CartDrawer
-        isOpen={isOpen}
-        onClose={closeCart}
-        onCheckout={beginCheckout}
-        onAuthenticate={() => requireAuthentication(() => beginCheckout())}
-        deliveryFee={deliveryFee}
-        canCheckout={items.length > 0}
-        checkoutError={error}
-      />
     </div>
   );
 }

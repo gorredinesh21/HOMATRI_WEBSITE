@@ -43,7 +43,7 @@ export default function OrderPortalPage() {
   const searchParams = useSearchParams();
   const { locationLabel, setCluster, activeCluster } = useLocation();
   const { isAuthenticated, requireAuthentication, setIsAuthModalOpen, customerPhone, token } = useAuth();
-  const { items, addItem, openCart, closeCart, isOpen, beginCheckout, deliveryFee, error, mealWindow } = useCart();
+  const { items, addItem, mealWindow } = useCart();
 
   const [activeTab, setActiveTab] = useState("KITCHENS");
   const [kitchens, setKitchens] = useState([]);
@@ -149,22 +149,21 @@ export default function OrderPortalPage() {
           })();
       if (!resolved?.item) return;
 
-      const run = () => {
-        const windowForItem = extras?.mealWindow || mealWindow || (mealFilter === "DINNER" ? "DINNER" : "LUNCH");
-        addItem({
-          menuItemId: resolved.item.menuItemId,
-          chefId: resolved.kitchen.chefId,
-          itemName: resolved.item.itemName,
-          quantity,
-          mealWindow: windowForItem,
-          unitPriceDisplay: resolved.item.price,
-          lineTotalDisplay: resolved.item.price * quantity,
-          customNote: note,
-        });
-      };
-      guard(run);
+      // Two-click flow: no login at Add — the cart popup asks at Pay.
+      const windowForItem = extras?.mealWindow || mealWindow || (mealFilter === "DINNER" ? "DINNER" : "LUNCH");
+      addItem({
+        menuItemId: resolved.item.menuItemId,
+        chefId: resolved.kitchen.chefId,
+        itemName: resolved.item.itemName,
+        quantity,
+        mealWindow: windowForItem,
+        unitPriceDisplay: resolved.item.price,
+        lineTotalDisplay: resolved.item.price * quantity,
+        kitchenName: resolved.kitchen.kitchenName,
+        customNote: note,
+      });
     },
-    [addItem, guard, mealFilter, mealWindow, kitchens]
+    [addItem, mealWindow, mealFilter, kitchens]
   );
 
   const handleOrderDishFromReel = useCallback(
@@ -187,19 +186,19 @@ export default function OrderPortalPage() {
           ? { menuItemId: reel.reelId, itemName: reel.dishName, price: reel.dishPrice }
           : null);
       if (!item) return;
-      guard(() => {
-        addItem({
-          menuItemId: item.menuItemId,
-          chefId: resolved?.kitchen?.chefId || reel.chefId,
-          itemName: item.itemName,
-          quantity: 1,
-          mealWindow: mealWindow || "LUNCH",
-          unitPriceDisplay: item.price,
-          lineTotalDisplay: item.price,
-        });
+      // Two-click flow: reel orders also skip the login gate — Pay asks.
+      addItem({
+        menuItemId: item.menuItemId,
+        chefId: resolved?.kitchen?.chefId || reel.chefId,
+        itemName: item.itemName,
+        quantity: 1,
+        mealWindow: mealWindow || "LUNCH",
+        unitPriceDisplay: item.price,
+        lineTotalDisplay: item.price,
+        kitchenName: reel.kitchenName,
       });
     },
-    [addItem, guard, mealWindow, reels, kitchens]
+    [addItem, mealWindow, reels, kitchens]
   );
 
   const onNext = () => setActiveIndex((index) => Math.min(filtered.length - 1, index + 1));
@@ -302,6 +301,8 @@ export default function OrderPortalPage() {
               onCardOpen={setOpenChefId}
               onNext={onNext}
               onPrevious={onPrevious}
+              onOrderItem={handleOrderItem}
+              cartItems={items}
             />
           )}
         </main>
@@ -349,15 +350,6 @@ export default function OrderPortalPage() {
         />
       ) : null}
 
-      <CartDrawer
-        isOpen={isOpen}
-        onClose={closeCart}
-        onCheckout={beginCheckout}
-        onAuthenticate={() => requireAuthentication(() => beginCheckout())}
-        deliveryFee={deliveryFee}
-        canCheckout={items.length > 0}
-        checkoutError={error}
-      />
       <CommentSheet
         open={commentOpen}
         onClose={() => setCommentOpen(false)}

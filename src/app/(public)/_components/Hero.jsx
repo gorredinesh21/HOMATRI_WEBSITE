@@ -45,12 +45,19 @@ export default function Hero() {
 
   return (
     <section className="relative overflow-hidden bg-homatri-cream">
-      <div className="absolute top-0 right-0 -mr-24 -mt-24 w-96 h-96 bg-homatri-orange/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-0 left-0 -ml-24 -mb-24 w-96 h-96 bg-homatri-forest/10 rounded-full blur-3xl pointer-events-none" />
+      {/* Mobile: the mothers art blends in as the hero background itself */}
+      <div className="lg:hidden absolute inset-0 pointer-events-none" aria-hidden="true">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/hero-mothers.webp" alt="" className="w-full h-full object-cover object-top" />
+        <div className="absolute inset-0 bg-gradient-to-b from-homatri-cream via-homatri-cream/85 to-homatri-cream/40" />
+      </div>
+
+      <div className="absolute top-0 right-0 -mr-24 -mt-24 w-96 h-96 bg-homatri-orange/10 rounded-full blur-3xl pointer-events-none hidden lg:block" />
+      <div className="absolute bottom-0 left-0 -ml-24 -mb-24 w-96 h-96 bg-homatri-forest/10 rounded-full blur-3xl pointer-events-none hidden lg:block" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 lg:py-24 relative z-10">
         <div className="grid lg:grid-cols-2 gap-10 lg:gap-8 items-center">
-          <div className="max-w-2xl">
+          <div className="max-w-2xl relative z-10">
             <h1 className="font-display text-[2.6rem] sm:text-5xl lg:text-6xl font-medium text-homatri-dark leading-[1.08]">
               Achha Khao. <br />
               <span className="text-homatri-orange italic font-normal">Ghar Ka Khao.</span>
@@ -109,8 +116,8 @@ export default function Hero() {
             </div>
           </div>
 
-          <div className="relative lg:-mr-6 xl:-mr-14">
-            {/* Edges of this art fade to transparent so it melts into the cream page. */}
+          {/* Desktop: side-by-side blended art (mobile uses it as background) */}
+          <div className="relative lg:-mr-6 xl:-mr-14 hidden lg:block">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/hero-mothers.webp"

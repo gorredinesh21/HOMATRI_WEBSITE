@@ -16,7 +16,7 @@ const NAV_LINKS = [
 
 export default function Navbar() {
   const { locationLabel } = useLocation();
-  const { items, openCart } = useCart();
+  const { items } = useCart();
   const cartCount = items.reduce((total, entry) => total + (Number(entry.quantity) || 0), 0);
 
   return (
@@ -52,7 +52,7 @@ export default function Navbar() {
 
           <button
             type="button"
-            onClick={openCart}
+            onClick={() => window.dispatchEvent(new Event("homatri:open-cart"))}
             aria-label={`Cart with ${cartCount} items`}
             className="relative w-10 h-10 inline-flex items-center justify-center rounded-xl border border-homatri-border bg-white text-homatri-dark hover:border-homatri-orange hover:text-homatri-orange transition-colors"
           >

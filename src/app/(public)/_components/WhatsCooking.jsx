@@ -2,9 +2,8 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ArrowRight, Clock, Flame, MapPin, Plus, Soup, Star, Truck, Users, UtensilsCrossed } from "lucide-react";
+import { ArrowRight, Clock, Flame, MapPin, Soup, Truck, Users, UtensilsCrossed } from "lucide-react";
 import { useCart } from "@/context/CartContext";
-import { useAuth } from "@/context/AuthContext";
 import { regionLabel } from "@/lib/visuals";
 import { ALL_REGIONS, cuisinesForRegion, cuisineRequestUrl } from "@/lib/cuisineTree";
 
@@ -40,7 +39,7 @@ function VegDot({ dietaryTag }) {
   return (
     <span
       title={isNonVeg ? "Non-vegetarian" : "Vegetarian"}
-      className={`inline-flex items-center justify-center w-4 h-4 rounded-sm border-2 ${
+      className={`inline-flex items-center justify-center w-3.5 h-3.5 rounded-sm border-2 ${
         isNonVeg ? "border-red-700" : "border-green-700"
       } bg-white`}
     >
@@ -49,66 +48,64 @@ function VegDot({ dietaryTag }) {
   );
 }
 
-function FoodCard({ dish, onAdd }) {
+// Circular dish card: photo placeholder ring (real dish photos drop in later),
+// name, what's included, price and Add — Zomato-style compact.
+function DishCircle({ dish, onAdd }) {
   const { item, kitchen } = dish;
   const serving = Boolean(kitchen.isCurrentlyServing);
-  const isNonVeg = /NON/i.test(String(item.dietaryTag || ""));
+  const includes = String(item.description || "").trim();
 
   return (
-    <article
-      className={`group relative bg-white rounded-3xl border shadow-xs overflow-hidden flex flex-col hover:shadow-md hover:-translate-y-0.5 transition-all ${
-        isNonVeg ? "border-red-100" : "border-green-100"
-      }`}
-    >
-      <span
-        className={`h-1.5 w-full ${isNonVeg ? "bg-red-500/80" : "bg-homatri-forest/80"}`}
-        aria-hidden="true"
-      />
-
-      <div className="p-4 sm:p-5 flex flex-col gap-2 flex-1">
-        <div className="flex items-start justify-between gap-2">
-          <h3 className="font-display text-lg sm:text-xl font-medium text-homatri-dark leading-snug">
-            {item.itemName}
-          </h3>
-          <VegDot dietaryTag={item.dietaryTag} />
-        </div>
-
-        <p className="text-xs text-homatri-muted leading-relaxed">
-          {kitchen.kitchenName} · {regionLabel(kitchen.regionalIdentity)}
-        </p>
-
-        <div className="flex items-center gap-1.5 text-xs font-semibold text-homatri-dark">
-          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-          {Number(kitchen.rating || 0).toFixed(1)}
-          <span
-            className={`ml-2 inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${
-              serving ? "bg-homatri-green-light text-homatri-forest" : "bg-homatri-sand text-homatri-muted"
-            }`}
-          >
-            <span className={`w-1.5 h-1.5 rounded-full ${serving ? "bg-homatri-forest" : "bg-homatri-muted"}`} />
-            {serving ? "Serving now" : "Pre-order"}
-          </span>
-        </div>
-
-        <div className="mt-auto pt-3 flex items-center gap-2 border-t border-homatri-border/60">
-          <span className="font-display text-2xl font-medium text-homatri-dark">₹{Math.round(item.price)}</span>
-          <span className="text-[11px] text-homatri-muted">/ plate</span>
-          <button
-            type="button"
-            onClick={() => onAdd(dish)}
-            className="ml-auto inline-flex items-center justify-center gap-1.5 bg-homatri-orange hover:bg-homatri-orange-dark text-white text-sm font-bold py-2.5 px-5 rounded-xl transition-colors"
-          >
-            <Plus className="w-4 h-4" /> Add
-          </button>
-        </div>
+    <li className="w-[148px] shrink-0">
+      <div className="relative w-[118px] h-[118px] mx-auto">
+        <span
+          className={`block w-full h-full rounded-full overflow-hidden border-[3px] ${
+            item.imageUrl ? "border-white shadow-md" : "border-dashed border-homatri-forest/35 bg-homatri-forest-mist"
+          } flex items-center justify-center`}
+        >
+          {item.imageUrl ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img src={item.imageUrl} alt={item.itemName} className="w-full h-full object-cover object-top" loading="lazy" />
+          ) : (
+            <UtensilsCrossed className="w-8 h-8 text-homatri-forest/40" aria-label="Photo coming soon" />
+          )}
+        </span>
+        {serving ? (
+          <span className="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-homatri-forest border-2 border-white" title="Serving now" />
+        ) : null}
       </div>
-    </article>
+
+      <div className="mt-2.5 flex items-start justify-center gap-1.5 px-1">
+        <h3 className="text-[13px] font-bold text-homatri-dark leading-tight text-center">
+          {item.itemName}
+        </h3>
+        <VegDot dietaryTag={item.dietaryTag} />
+      </div>
+
+      {includes ? (
+        <p className="mt-1 text-[10px] leading-snug text-homatri-muted text-center px-1" style={{ minHeight: 26 }}>
+          {includes}
+        </p>
+      ) : (
+        <p className="mt-1 text-[10px] text-center" style={{ minHeight: 26 }}>&nbsp;</p>
+      )}
+
+      <div className="mt-1.5 flex items-center justify-center gap-2">
+        <span className="font-display text-lg font-medium text-homatri-dark">₹{Math.round(item.price)}</span>
+        <button
+          type="button"
+          onClick={() => onAdd(dish)}
+          className="bg-homatri-orange hover:bg-homatri-orange-dark text-white text-xs font-bold py-1.5 px-4 rounded-full transition-colors"
+        >
+          + Add
+        </button>
+      </div>
+    </li>
   );
 }
 
 export default function WhatsCooking({ dishes, activeTab, onTabChange }) {
-  const { addItem, openCart } = useCart();
-  const { requireAuthentication } = useAuth();
+  const { addItem } = useCart();
 
   const liveRegionValues = useMemo(
     () => [...new Set(dishes.map((dish) => dish.kitchen.regionalIdentity || dish.kitchen.hometownRegion).filter(Boolean))],
@@ -144,17 +141,16 @@ export default function WhatsCooking({ dishes, activeTab, onTabChange }) {
   }, [dishes, activeTab, liveValuesInRegion, selectedCuisine]);
 
   const handleAdd = (dish) => {
-    requireAuthentication(() => {
-      addItem({
-        menuItemId: dish.item.menuItemId,
-        chefId: dish.kitchen.chefId,
-        itemName: dish.item.itemName,
-        quantity: 1,
-        mealWindow: activeTab === "DINNER" ? "DINNER" : "LUNCH",
-        unitPriceDisplay: dish.item.price,
-        lineTotalDisplay: dish.item.price,
-      });
-      openCart();
+    // No login here — customers browse and add freely; login happens at Pay.
+    addItem({
+      menuItemId: dish.item.menuItemId,
+      chefId: dish.kitchen.chefId,
+      itemName: dish.item.itemName,
+      quantity: 1,
+      mealWindow: activeTab === "DINNER" ? "DINNER" : "LUNCH",
+      unitPriceDisplay: dish.item.price,
+      lineTotalDisplay: dish.item.price,
+      kitchenName: dish.kitchen.kitchenName,
     });
   };
 
@@ -323,10 +319,16 @@ export default function WhatsCooking({ dishes, activeTab, onTabChange }) {
             </a>
           </div>
         ) : showDishes && windowDishes.length > 0 ? (
-          <div className="mt-8 grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {windowDishes.slice(0, 8).map((dish) => (
-              <FoodCard key={`${dish.kitchen.chefId}-${dish.item.menuItemId}`} dish={dish} onAdd={handleAdd} />
-            ))}
+          <div className="mt-8 -mx-4 px-4 sm:mx-0 sm:px-0 overflow-x-auto pb-3">
+            <ul className="flex items-start gap-4 sm:gap-5 w-max">
+              {windowDishes.slice(0, 10).map((dish) => (
+                <DishCircle
+                  key={`${dish.kitchen.chefId}-${dish.item.menuItemId}`}
+                  dish={dish}
+                  onAdd={handleAdd}
+                />
+              ))}
+            </ul>
           </div>
         ) : showDishes ? (
           <div className="mt-8 bg-homatri-cream border border-dashed border-homatri-border rounded-3xl p-10 text-center">

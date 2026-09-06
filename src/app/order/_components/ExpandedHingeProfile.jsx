@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Instagram, Youtube, ShieldCheck, X } from "lucide-react";
+import { Instagram, Youtube, ShieldCheck, UtensilsCrossed, X } from "lucide-react";
 import { getActiveMealWindow } from "@/lib/mealWindow";
 
 export default function ExpandedHingeProfile({ chef, onClose, onOrderItem, onFollow }) {
@@ -163,67 +163,88 @@ export default function ExpandedHingeProfile({ chef, onClose, onOrderItem, onFol
             {menu.length === 0 ? (
               <p className="text-sm text-homatri-muted">No items listed for this meal window.</p>
             ) : (
-              menu.map((item) => {
-                const qty = selectedQuantities[item.menuItemId] || 0;
-                const soldOut = item.availability === "SOLD_OUT";
-                return (
-                  <div key={item.menuItemId} className="border border-homatri-border rounded-2xl p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <h4 className="font-bold text-homatri-dark">{item.itemName}</h4>
-                        <p className="text-sm text-homatri-orange font-semibold">₹{item.price}</p>
-                        {soldOut ? (
-                          <p className="text-xs font-semibold text-red-600 mt-1">Sold out</p>
+              <ul className="divide-y divide-homatri-border/70">
+                {menu.map((item) => {
+                  const qty = selectedQuantities[item.menuItemId] || 0;
+                  const soldOut = item.availability === "SOLD_OUT";
+                  const isNonVeg = /NON/i.test(String(item.dietaryTag || ""));
+                  return (
+                    <li key={item.menuItemId} className="py-3 flex items-start gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            className={`w-3 h-3 rounded-sm border-2 flex items-center justify-center ${
+                              isNonVeg ? "border-red-700" : "border-green-700"
+                            }`}
+                          >
+                            <span className={`w-1 h-1 rounded-full ${isNonVeg ? "bg-red-700" : "bg-green-700"}`} />
+                          </span>
+                          <h4 className="text-sm font-bold text-homatri-dark leading-snug">{item.itemName}</h4>
+                        </div>
+                        {item.description ? (
+                          <p className="text-[11px] text-homatri-muted leading-snug mt-0.5">{item.description}</p>
                         ) : null}
+                        <p className="text-sm font-bold text-homatri-dark mt-1">₹{item.price}</p>
+                        {soldOut ? (
+                          <p className="text-[10px] font-semibold text-red-600 mt-0.5">Sold out</p>
+                        ) : null}
+                        <input
+                          type="text"
+                          value={dietaryNotes[item.menuItemId] || ""}
+                          onChange={(event) =>
+                            setDietaryNotes((prev) => ({ ...prev, [item.menuItemId]: event.target.value }))
+                          }
+                          placeholder="Note — no garlic, medium spice…"
+                          className="mt-1.5 w-full max-w-xs text-[11px] border border-homatri-border rounded-lg px-2.5 py-1.5"
+                        />
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="shrink-0 flex flex-col items-center gap-1.5">
+                        <span className="w-14 h-14 rounded-xl border border-dashed border-homatri-forest/30 bg-homatri-forest-mist flex items-center justify-center overflow-hidden">
+                          {item.imageUrl ? (
+                            /* eslint-disable-next-line @next/next/no-img-element */
+                            <img src={item.imageUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
+                          ) : (
+                            <UtensilsCrossed className="w-4 h-4 text-homatri-forest/40" />
+                          )}
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            disabled={soldOut || qty < 1}
+                            onClick={() => setQty(item.menuItemId, -1)}
+                            className="w-7 h-7 rounded-lg border border-homatri-border text-sm font-bold disabled:opacity-40"
+                          >
+                            −
+                          </button>
+                          <span className="w-5 text-center text-xs font-bold">{qty}</span>
+                          <button
+                            type="button"
+                            disabled={soldOut}
+                            onClick={() => setQty(item.menuItemId, 1)}
+                            className="w-7 h-7 rounded-lg border border-homatri-border text-sm font-bold disabled:opacity-40"
+                          >
+                            +
+                          </button>
+                        </div>
                         <button
                           type="button"
-                          disabled={soldOut}
-                          onClick={() => setQty(item.menuItemId, -1)}
-                          className="w-8 h-8 rounded-lg border border-homatri-border"
+                          disabled={soldOut || qty < 1}
+                          onClick={() =>
+                            onOrderItem?.(item.menuItemId, qty || 1, dietaryNotes[item.menuItemId], {
+                              mealWindow: activeMealWindow,
+                              item,
+                              chef,
+                            })
+                          }
+                          className="bg-homatri-orange hover:bg-homatri-orange-dark text-white text-[11px] font-bold py-1 px-3.5 rounded-lg disabled:opacity-40"
                         >
-                          −
-                        </button>
-                        <span className="w-6 text-center text-sm font-bold">{qty}</span>
-                        <button
-                          type="button"
-                          disabled={soldOut}
-                          onClick={() => setQty(item.menuItemId, 1)}
-                          className="w-8 h-8 rounded-lg border border-homatri-border"
-                        >
-                          +
+                          ADD +
                         </button>
                       </div>
-                    </div>
-                    {item.supportsCustomization ? (
-                      <input
-                        type="text"
-                        value={dietaryNotes[item.menuItemId] || ""}
-                        onChange={(event) =>
-                          setDietaryNotes((prev) => ({ ...prev, [item.menuItemId]: event.target.value }))
-                        }
-                        placeholder="Dietary note — e.g. no garlic, medium spice"
-                        className="mt-3 w-full text-xs border border-homatri-border rounded-xl px-3 py-2"
-                      />
-                    ) : null}
-                    <button
-                      type="button"
-                      disabled={soldOut || qty < 1}
-                      onClick={() =>
-                        onOrderItem?.(item.menuItemId, qty || 1, dietaryNotes[item.menuItemId], {
-                          mealWindow: activeMealWindow,
-                          item,
-                          chef,
-                        })
-                      }
-                      className="mt-3 w-full bg-homatri-dark text-white text-sm font-bold py-2.5 rounded-xl disabled:opacity-40"
-                    >
-                      Add to cart
-                    </button>
-                  </div>
-                );
-              })
+                    </li>
+                  );
+                })}
+              </ul>
             )}
           </section>
         </div>

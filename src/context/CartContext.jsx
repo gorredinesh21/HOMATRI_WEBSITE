@@ -15,7 +15,7 @@ export function CartProvider({ children }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
-  const [paymentMethod, setPaymentMethodState] = useState("COD");
+  const [paymentMethod, setPaymentMethodState] = useState("RAZORPAY");
   const [pendingPayment, setPendingPayment] = useState(null);
   const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
   const pendingCheckout = useRef(false);
