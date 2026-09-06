@@ -23,10 +23,11 @@ export default function LocationBubble() {
   useEffect(() => {
     const vw = window.innerWidth;
     const vh = window.innerHeight;
+    // Stack above the cart bubble (which sits lower) so the two never coincide.
     setPos(
       vw < 640
-        ? { x: vw - 76, y: vh * 0.55 }
-        : { x: vw - 100, y: 320 }
+        ? { x: vw - 76, y: vh * 0.62 - 76 }
+        : { x: vw - 100, y: 380 - 76 }
     );
   }, []);
 

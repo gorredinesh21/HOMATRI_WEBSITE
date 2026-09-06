@@ -332,30 +332,30 @@ function CartPanel({ onCollapse }) {
   };
 
   return (
-    <div className="w-[min(92vw,360px)] max-h-[72dvh] bg-white rounded-3xl border border-homatri-border shadow-2xl flex flex-col overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-homatri-border bg-homatri-cream shrink-0">
+    <div className="w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl max-h-[88dvh] shadow-2xl border border-homatri-border flex flex-col overflow-hidden">
+      <div className="flex items-center justify-between p-4 border-b border-homatri-border shrink-0">
         <div className="min-w-0">
-          <p className="text-sm font-display font-medium text-homatri-dark truncate">Your order</p>
-          <p className="text-[10px] text-homatri-muted truncate">{items[0]?.kitchenName || ""}</p>
+          <p className="font-display text-lg font-medium text-homatri-dark truncate">Your order</p>
+          <p className="text-[11px] text-homatri-muted truncate">{items[0]?.kitchenName || ""}</p>
         </div>
         <button
           type="button"
           onClick={onCollapse}
-          aria-label="Collapse cart"
+          aria-label="Close cart"
           className="p-1.5 rounded-full hover:bg-homatri-sand"
         >
-          <ChevronDown className="w-4 h-4 text-homatri-muted" />
+          <X className="w-5 h-5 text-homatri-muted" />
         </button>
       </div>
 
-      <div className="overflow-y-auto p-3.5 space-y-3.5">
+      <div className="overflow-y-auto p-4 space-y-4">
         {/* Items */}
         <ul className="divide-y divide-homatri-border/70">
           {items.map((line) => (
-            <li key={line.menuItemId} className="py-2 flex items-center gap-2.5">
+            <li key={line.menuItemId} className="py-2.5 flex items-center gap-3">
               <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-bold text-homatri-dark truncate">{line.itemName}</p>
-                <p className="text-[10px] text-homatri-muted">
+                <p className="text-sm font-bold text-homatri-dark leading-snug">{line.itemName}</p>
+                <p className="text-[11px] text-homatri-muted">
                   ₹{line.unitPriceDisplay} × {line.quantity}
                 </p>
                 {line.customNote ? (
@@ -371,21 +371,21 @@ function CartPanel({ onCollapse }) {
                       ? removeItem(line.menuItemId)
                       : updateQuantity(line.menuItemId, line.quantity - 1)
                   }
-                  className="w-6 h-6 rounded-md border border-homatri-border flex items-center justify-center"
+                  className="w-7 h-7 rounded-lg border border-homatri-border flex items-center justify-center"
                 >
-                  <Minus className="w-3 h-3" />
+                  <Minus className="w-3.5 h-3.5" />
                 </button>
-                <span className="w-4 text-center text-xs font-bold">{line.quantity}</span>
+                <span className="w-5 text-center text-sm font-bold">{line.quantity}</span>
                 <button
                   type="button"
                   aria-label="More"
                   onClick={() => updateQuantity(line.menuItemId, line.quantity + 1)}
-                  className="w-6 h-6 rounded-md border border-homatri-border flex items-center justify-center"
+                  className="w-7 h-7 rounded-lg border border-homatri-border flex items-center justify-center"
                 >
-                  <Plus className="w-3 h-3" />
+                  <Plus className="w-3.5 h-3.5" />
                 </button>
               </div>
-              <span className="w-12 text-right text-[13px] font-bold text-homatri-dark shrink-0">
+              <span className="w-14 text-right text-sm font-bold text-homatri-dark shrink-0">
                 ₹{Math.round(line.unitPriceDisplay * line.quantity)}
               </span>
             </li>
@@ -393,17 +393,17 @@ function CartPanel({ onCollapse }) {
         </ul>
 
         {/* Bill breakdown */}
-        <div className="bg-homatri-cream rounded-2xl p-3 space-y-1">
-          <p className="text-[9px] font-bold uppercase tracking-widest text-homatri-muted">Bill details</p>
-          <div className="flex justify-between text-[11px] text-homatri-dark">
+        <div className="bg-homatri-cream rounded-2xl p-3.5 space-y-1.5">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-homatri-muted">Bill details</p>
+          <div className="flex justify-between text-xs text-homatri-dark">
             <span>Items subtotal</span>
             <span className="font-semibold">₹{Math.round(subtotal)}</span>
           </div>
-          <div className="flex justify-between text-[11px] text-homatri-dark">
+          <div className="flex justify-between text-xs text-homatri-dark">
             <span>Convenience fee</span>
             <span className="font-semibold">₹{items.length ? Math.round(deliveryFee) : 0}</span>
           </div>
-          <div className="flex justify-between text-[13px] font-bold text-homatri-dark pt-1 border-t border-homatri-border">
+          <div className="flex justify-between text-sm font-bold text-homatri-dark pt-1.5 border-t border-homatri-border">
             <span>To pay</span>
             <span>₹{Math.round(total)}</span>
           </div>
@@ -411,7 +411,7 @@ function CartPanel({ onCollapse }) {
 
         {/* Address */}
         <div>
-          <p className="text-[9px] font-bold uppercase tracking-widest text-homatri-muted mb-1">Deliver to</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-homatri-muted mb-1.5">Deliver to</p>
           {fullAddress ? (
             <button
               type="button"
@@ -436,7 +436,7 @@ function CartPanel({ onCollapse }) {
 
         {/* Payment */}
         <div>
-          <p className="text-[9px] font-bold uppercase tracking-widest text-homatri-muted mb-1">Payment</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-homatri-muted mb-1.5">Payment</p>
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
@@ -468,12 +468,12 @@ function CartPanel({ onCollapse }) {
         {error ? <p className="text-[11px] text-red-600 font-medium">{error}</p> : null}
       </div>
 
-      <div className="p-3 border-t border-homatri-border shrink-0">
+      <div className="p-4 border-t border-homatri-border shrink-0 bg-white">
         <button
           type="button"
           onClick={pay}
           disabled={isSubmitting || !items.length}
-          className="w-full bg-homatri-orange hover:bg-homatri-orange-dark text-white font-extrabold py-3 rounded-2xl text-[13px] shadow-md disabled:opacity-50 uppercase tracking-wider inline-flex items-center justify-center gap-1.5"
+          className="w-full bg-homatri-orange hover:bg-homatri-orange-dark text-white font-extrabold py-3.5 rounded-2xl text-sm shadow-md disabled:opacity-50 uppercase tracking-wider inline-flex items-center justify-center gap-2"
         >
           <Truck className="w-4 h-4" />
           {isSubmitting ? "Placing order…" : `Pay ₹${Math.round(total)}${paymentMethod === "COD" ? " on delivery" : ""}`}
@@ -507,8 +507,8 @@ export default function CartBubble() {
     const vh = window.innerHeight;
     setPos(
       vw < 640
-        ? { x: vw - 76, y: vh * 0.55 }
-        : { x: vw - 100, y: 320 }
+        ? { x: vw - 84, y: vh * 0.62 }
+        : { x: vw - 100, y: 380 }
     );
   }, []);
 
@@ -536,28 +536,12 @@ export default function CartBubble() {
 
   if (!count || !pos) return null;
 
-  // Panel opens toward wherever there is more room, anchored to the bubble.
-  const vw = typeof window !== "undefined" ? window.innerWidth : 1200;
-  const vh = typeof window !== "undefined" ? window.innerHeight : 800;
-  const panelWidth = Math.min(vw * 0.92, 360);
-  const openUpward = pos.y > vh * 0.5;
-  const panelStyle = openUpward
-    ? {
-        left: Math.min(Math.max(pos.x - panelWidth + 56, 8), vw - panelWidth - 8),
-        bottom: Math.max(vh - pos.y + 60, 8),
-        transformOrigin: "bottom right",
-      }
-    : {
-        left: Math.min(Math.max(pos.x - panelWidth + 56, 8), vw - panelWidth - 8),
-        top: pos.y + 60,
-        transformOrigin: "top right",
-      };
-
   return (
     <>
-      {/* Expanding panel — anchored to the bubble, no backdrop */}
+      {/* Full bill popup — bottom sheet on phones, centered on desktop.
+          Opens on bubble tap; tap the bubble again or ✕ to close. */}
       {expanded ? (
-        <div className="fixed z-[55]" style={panelStyle}>
+        <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4">
           <CartPanel onCollapse={() => setExpanded(false)} />
         </div>
       ) : null}
