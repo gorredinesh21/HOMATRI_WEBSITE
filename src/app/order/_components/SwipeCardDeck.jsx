@@ -172,34 +172,6 @@ export default function SwipeCardDeck({
 
   return (
     <div className="relative max-w-md mx-auto">
-      {/* Compact prev/next — small, always visible, over the card's top edge */}
-      <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 bg-white/95 backdrop-blur border border-homatri-border rounded-full shadow-lg px-2 py-1">
-        <button
-          type="button"
-          onClick={() => {
-            setHasSwipedOnce(true);
-            onPrevious?.();
-          }}
-          className="w-7 h-7 rounded-full hover:bg-homatri-sand flex items-center justify-center"
-          aria-label="Previous kitchen"
-        >
-          <ChevronLeft className="w-4 h-4 text-homatri-dark" />
-        </button>
-        <span className="text-[11px] font-bold text-homatri-dark tabular-nums">
-          {activeIndex + 1} / {kitchens.length}
-        </span>
-        <button
-          type="button"
-          onClick={() => {
-            setHasSwipedOnce(true);
-            onNext?.();
-          }}
-          className="w-7 h-7 rounded-full hover:bg-homatri-sand flex items-center justify-center"
-          aria-label="Next kitchen"
-        >
-          <ChevronRight className="w-4 h-4 text-homatri-dark" />
-        </button>
-      </div>
       <div
         className="relative h-[620px] touch-pan-y"
         onPointerDown={onPointerDown}
@@ -207,22 +179,17 @@ export default function SwipeCardDeck({
         onPointerUp={onPointerUp}
         onPointerLeave={onPointerUp}
       >
-        {kitchens.slice(activeIndex, activeIndex + 3).map((kitchen, stackIndex) => {
-          const isTop = stackIndex === 0;
-          const translate = isTop ? dragX : 0;
-          const rotate = isTop ? dragX / 18 : 0;
-          // Tinder-style floating stack: the next cards peek out on BOTH sides,
-          // slightly rotated — so it's obvious there are more cards to swipe.
-          const stackFloat =
-            stackIndex === 1
-              ? "rotate-[3deg] translate-x-5 translate-y-3"
-              : stackIndex === 2
-              ? "-rotate-[2.5deg] -translate-x-5 translate-y-6"
-              : "";
+        {(() => {
+          const kitchen = kitchens[activeIndex];
+          if (!kitchen) return null;
+          const stackIndex = 0;
+          const isTop = true;
+          const translate = dragX;
+          const rotate = dragX / 18;
           return (
             <article
               key={kitchen.chefId}
-              className={`absolute inset-0 rounded-3xl overflow-hidden border border-homatri-border bg-white shadow-2xl ${stackFloat}`}
+              className={`absolute inset-0 rounded-3xl overflow-hidden border border-homatri-border bg-white shadow-2xl`}
               style={{
                 transform: isTop ? `translateX(${translate}px) rotate(${rotate}deg)` : undefined,
                 zIndex: 10 - stackIndex,
@@ -245,7 +212,34 @@ export default function SwipeCardDeck({
                 <div className="shrink-0">
                   <PhotoCarousel photos={kitchenPhotos(kitchen)} alt={kitchen.kitchenName} />
                 </div>
-                <div className="px-4 pt-3 pb-2 shrink-0 flex items-start justify-between gap-2">
+                <div className="px-4 pt-2.5 shrink-0 flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setHasSwipedOnce(true);
+                      onPrevious?.();
+                    }}
+                    className="w-8 h-8 rounded-full border border-homatri-border flex items-center justify-center hover:bg-homatri-sand"
+                    aria-label="Previous kitchen"
+                  >
+                    <ChevronLeft className="w-4 h-4 text-homatri-dark" />
+                  </button>
+                  <span className="text-[11px] font-bold text-homatri-muted tabular-nums">
+                    {activeIndex + 1} / {kitchens.length}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setHasSwipedOnce(true);
+                      onNext?.();
+                    }}
+                    className="w-8 h-8 rounded-full border border-homatri-border flex items-center justify-center hover:bg-homatri-sand"
+                    aria-label="Next kitchen"
+                  >
+                    <ChevronRight className="w-4 h-4 text-homatri-dark" />
+                  </button>
+                </div>
+                <div className="px-4 pb-2 shrink-0 flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="text-[10px] font-semibold uppercase tracking-wider text-homatri-orange truncate">
                       {kitchen.regionalIdentity}
@@ -346,7 +340,7 @@ export default function SwipeCardDeck({
               </div>
             </article>
           );
-        })}
+        })()}
       </div>
 
       {/* Swipe teacher — always visible until the user swipes once */}
