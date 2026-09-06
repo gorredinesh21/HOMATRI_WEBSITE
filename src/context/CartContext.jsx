@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from "react";
 import { checkoutOrder, verifyOrderPayment, DELIVERY_FEE_DISPLAY } from "@/lib/api";
 import { openRazorpayCheckout } from "@/lib/razorpay";
+import { resolveCheckoutMealWindow } from "@/lib/mealWindow";
 import { useAuth } from "@/context/AuthContext";
 
 const CartContext = createContext(null);
@@ -164,8 +165,11 @@ export function CartProvider({ children }) {
     setIsSubmitting(true);
     setError(null);
 
+    // Resolve against the live meal clock: a LUNCH cart after the 11:30
+    // cutoff checks out as the orderable window instead of being rejected.
+    const checkoutWindow = resolveCheckoutMealWindow(items).mealWindow;
     const payload = {
-      meal_window: mealWindow,
+      meal_window: checkoutWindow,
       dietary_notes: customNotes || null,
       payment_method: paymentMethod,
       items: items.map((item) => ({

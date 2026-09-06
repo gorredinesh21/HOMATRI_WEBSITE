@@ -6,7 +6,6 @@ import DualTabHeader from "./_components/DualTabHeader";
 import ServingFilterBar from "./_components/ServingFilterBar";
 import SwipeCardDeck from "./_components/SwipeCardDeck";
 import ExpandedHingeProfile from "./_components/ExpandedHingeProfile";
-import CartDrawer from "./_components/CartDrawer";
 import CommentSheet from "./_components/CommentSheet";
 import ReelFeed from "./_components/ReelFeed";
 import { useAuth } from "@/context/AuthContext";
@@ -258,7 +257,7 @@ export default function OrderPortalPage() {
         activeTab={activeTab}
         onTabChange={setActiveTab}
         cartItemCount={items.reduce((sum, item) => sum + item.quantity, 0)}
-        onOpenCart={openCart}
+        onOpenCart={() => window.dispatchEvent(new Event("homatri:open-cart"))}
         locationLabel={locationLabel}
         isAuthenticated={isAuthenticated}
         onAuthClick={() => {

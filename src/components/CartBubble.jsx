@@ -240,9 +240,19 @@ function CartPanel({ address, setAddress, onCollapse }) {
     setPaymentMethod,
     beginCheckout,
   } = useCart();
-  const { requireAuthentication } = useAuth();
+  const { requireAuthentication, token: authToken } = useAuth();
   const { activeCluster } = useLocation();
   const [addressOpen, setAddressOpen] = useState(false);
+
+  // Address + payment happen after login — anonymous users are signed in
+  // first and then dropped straight into the map picker.
+  const openAddresses = () => {
+    if (!authToken) {
+      requireAuthentication(() => setAddressOpen(true));
+      return;
+    }
+    setAddressOpen(true);
+  };
 
   const fullAddress = address
     ? {
@@ -351,7 +361,7 @@ function CartPanel({ address, setAddress, onCollapse }) {
           {fullAddress ? (
             <button
               type="button"
-              onClick={() => setAddressOpen(true)}
+              onClick={openAddresses}
               className="w-full text-left border border-homatri-border rounded-xl p-2.5 hover:border-homatri-forest"
             >
               <p className="text-xs font-bold text-homatri-dark line-clamp-1">{fullAddress.fullAddress}</p>
@@ -362,7 +372,7 @@ function CartPanel({ address, setAddress, onCollapse }) {
           ) : (
             <button
               type="button"
-              onClick={() => setAddressOpen(true)}
+              onClick={openAddresses}
               className="w-full border border-dashed border-homatri-forest/40 text-homatri-forest text-xs font-bold py-2.5 rounded-xl hover:bg-homatri-forest-mist inline-flex items-center justify-center gap-1.5"
             >
               <MapPin className="w-3.5 h-3.5" /> Choose location on map
