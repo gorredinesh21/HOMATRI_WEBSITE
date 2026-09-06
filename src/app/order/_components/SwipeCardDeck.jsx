@@ -194,9 +194,7 @@ export default function SwipeCardDeck({
           return (
             <article
               key={kitchen.chefId}
-              className={`absolute inset-0 rounded-3xl overflow-hidden border border-homatri-border bg-white shadow-2xl ${stackFloat} ${
-                isTop && !hasSwipedOnce ? "reel-card-wiggle" : ""
-              }`}
+              className={`absolute inset-0 rounded-3xl overflow-hidden border border-homatri-border bg-white shadow-2xl ${stackFloat}`}
               style={{
                 transform: isTop ? `translateX(${translate}px) rotate(${rotate}deg)` : undefined,
                 zIndex: 10 - stackIndex,

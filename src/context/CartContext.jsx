@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useMemo, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { checkoutOrder, verifyOrderPayment, DELIVERY_FEE_DISPLAY } from "@/lib/api";
 import { openRazorpayCheckout } from "@/lib/razorpay";
 import { resolveCheckoutMealWindow } from "@/lib/mealWindow";
@@ -8,16 +8,47 @@ import { useAuth } from "@/context/AuthContext";
 
 const CartContext = createContext(null);
 
+const CART_STORAGE_KEY = "homatri_cart_v2";
+
+function loadPersistedCart() {
+  if (typeof window === "undefined") return { items: [], mealWindow: null, paymentMethod: null, deliveryAddress: null };
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(CART_STORAGE_KEY) || "{}");
+    return {
+      items: Array.isArray(parsed.items) ? parsed.items : [],
+      mealWindow: parsed.mealWindow || null,
+      paymentMethod: parsed.paymentMethod === "COD" ? "COD" : parsed.paymentMethod === "RAZORPAY" ? "RAZORPAY" : null,
+      deliveryAddress: parsed.deliveryAddress || null,
+    };
+  } catch {
+    return { items: [], mealWindow: null, paymentMethod: null, deliveryAddress: null };
+  }
+}
+
 export function CartProvider({ children }) {
   const { token, customerPhone, requireAuthentication, isAuthenticated, user } = useAuth();
-  const [items, setItems] = useState([]);
-  const [mealWindow, setMealWindowState] = useState(null);
+  const [persisted] = useState(loadPersistedCart);
+  const [items, setItems] = useState(persisted.items);
+  const [mealWindow, setMealWindowState] = useState(persisted.mealWindow);
+  const [deliveryAddress, setDeliveryAddress] = useState(persisted.deliveryAddress);
   const [customNotes, setCustomNotes] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
-  const [paymentMethod, setPaymentMethodState] = useState("RAZORPAY");
+  const [paymentMethod, setPaymentMethodState] = useState(persisted.paymentMethod || "RAZORPAY");
   const [pendingPayment, setPendingPayment] = useState(null);
+
+  // Cart survives refreshes: items, window, payment method and chosen address.
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        CART_STORAGE_KEY,
+        JSON.stringify({ items, mealWindow, paymentMethod, deliveryAddress })
+      );
+    } catch {
+      // Private mode / storage full — cart just won't persist.
+    }
+  }, [items, mealWindow, paymentMethod, deliveryAddress]);
   const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
   const pendingCheckout = useRef(false);
 
@@ -147,7 +178,7 @@ export function CartProvider({ children }) {
     });
   };
 
-  const beginCheckout = useCallback(async (deliveryAddress = null) => {
+  const beginCheckout = useCallback(async (checkoutAddress = null) => {
     if (!items.length) {
       setError("Your cart is empty.");
       return;
@@ -157,7 +188,7 @@ export function CartProvider({ children }) {
       pendingCheckout.current = true;
       requireAuthentication(() => {
         pendingCheckout.current = false;
-        beginCheckout(deliveryAddress);
+        beginCheckout(checkoutAddress);
       });
       return;
     }
@@ -181,13 +212,14 @@ export function CartProvider({ children }) {
     };
     // The cart drawer passes the selected delivery address through — without it
     // the backend falls back to the (often empty) customer profile and rejects.
-    if (deliveryAddress?.fullAddress || deliveryAddress?.id) {
+    const addressToSend = checkoutAddress || deliveryAddress;
+    if (addressToSend?.fullAddress || addressToSend?.id) {
       payload.delivery_address = {
-        address_id: deliveryAddress.id || null,
-        full_address: deliveryAddress.fullAddress || deliveryAddress.full_address || null,
-        phone: deliveryAddress.phone || customerPhone || null,
-        latitude: deliveryAddress.latitude ?? null,
-        longitude: deliveryAddress.longitude ?? null,
+        address_id: addressToSend.id || null,
+        full_address: addressToSend.fullAddress || addressToSend.full_address || null,
+        phone: addressToSend.phone || customerPhone || null,
+        latitude: addressToSend.latitude ?? null,
+        longitude: addressToSend.longitude ?? null,
       };
     }
 
@@ -273,6 +305,8 @@ export function CartProvider({ children }) {
       error,
       paymentMethod,
       setPaymentMethod,
+      deliveryAddress,
+      setDeliveryAddress,
       pendingPayment,
       isVerifyingPayment,
       confirmPayment,
@@ -302,6 +336,8 @@ export function CartProvider({ children }) {
       error,
       paymentMethod,
       setPaymentMethod,
+      deliveryAddress,
+      setDeliveryAddress,
       pendingPayment,
       isVerifyingPayment,
       confirmPayment,

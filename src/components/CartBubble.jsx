@@ -6,7 +6,7 @@
 // fully interactive while the widget is open.
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronDown, CreditCard, MapPin, Minus, Plus, ShoppingBag, Truck, Wallet, X } from "lucide-react";
+import { ChevronDown, CreditCard, Crosshair, MapPin, Minus, Plus, ShoppingBag, Truck, Wallet, X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { useLocation } from "@/context/LocationContext";
@@ -33,7 +33,7 @@ function loadGoogleMaps() {
 
 /* ---------------- Address popup with Google map ---------------- */
 
-function AddressPopup({ onClose, onSaved }) {
+export function AddressPopup({ onClose, onSaved }) {
   const { token, customerPhone } = useAuth();
   const [saved, setSaved] = useState([]);
   const [addingNew, setAddingNew] = useState(false);
@@ -44,7 +44,44 @@ function AddressPopup({ onClose, onSaved }) {
     phone: customerPhone || "",
   });
   const [pin, setPin] = useState(GHANSOLI);
+  const [locating, setLocating] = useState(false);
   const [mapError, setMapError] = useState("");
+
+  // "My location" — browser geolocation permission → pin jumps to the user.
+  const moveToMyLocation = () => {
+    if (!navigator.geolocation) {
+      setMapError("This device can't share its location.");
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const next = { lat: position.coords.latitude, lng: position.coords.longitude };
+        setPin(next);
+        markerRef.current?.setPosition(next);
+        mapObjRef.current?.setCenter(next);
+        setLocating(false);
+        // Best-effort street fill via Google's geocoder (fails silently).
+        try {
+          const maps = window.google?.maps;
+          if (maps) {
+            new maps.Geocoder().geocode({ location: next }, (results, status) => {
+              if (status === "OK" && results?.[0]) {
+                setForm((f) => (f.street ? f : { ...f, street: results[0].formatted_address }));
+              }
+            });
+          }
+        } catch {
+          // non-fatal
+        }
+      },
+      () => {
+        setLocating(false);
+        setMapError("Location permission denied — tap the map to pick manually.");
+      },
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  };
   const [saving, setSaving] = useState(false);
   const mapRef = useRef(null);
   const mapObjRef = useRef(null);
@@ -167,7 +204,22 @@ function AddressPopup({ onClose, onSaved }) {
 
           {addingNew ? (
             <div className="space-y-3 border-t border-homatri-border pt-3">
-              <div ref={mapRef} className="w-full h-44 rounded-2xl border border-homatri-border bg-homatri-sand" />
+              <div className="relative">
+                <div ref={mapRef} className="w-full h-44 rounded-2xl border border-homatri-border bg-homatri-sand" />
+                <button
+                  type="button"
+                  onClick={moveToMyLocation}
+                  aria-label="Use my current location"
+                  title="Use my current location"
+                  className="absolute bottom-2 right-2 w-10 h-10 rounded-full bg-white shadow-lg border border-homatri-border flex items-center justify-center hover:bg-homatri-cream"
+                >
+                  {locating ? (
+                    <span className="block w-4 h-4 rounded-full border-2 border-homatri-forest border-t-transparent animate-spin" />
+                  ) : (
+                    <Crosshair className="w-5 h-5 text-homatri-forest" />
+                  )}
+                </button>
+              </div>
               <p className="text-[11px] text-homatri-muted flex items-center gap-1.5">
                 <MapPin className="w-3.5 h-3.5 text-homatri-forest" />
                 Tap the map or drag the pin to your exact building.
@@ -226,7 +278,7 @@ function AddressPopup({ onClose, onSaved }) {
 
 /* ---------------- Expanding cart panel (anchored to the bubble) ---------------- */
 
-function CartPanel({ address, setAddress, onCollapse }) {
+function CartPanel({ onCollapse }) {
   const {
     items,
     updateQuantity,
@@ -239,6 +291,8 @@ function CartPanel({ address, setAddress, onCollapse }) {
     paymentMethod,
     setPaymentMethod,
     beginCheckout,
+    deliveryAddress: address,
+    setDeliveryAddress: setAddress,
   } = useCart();
   const { requireAuthentication, token: authToken } = useAuth();
   const { activeCluster } = useLocation();
@@ -441,15 +495,22 @@ function CartPanel({ address, setAddress, onCollapse }) {
 export default function CartBubble() {
   const { items, total } = useCart();
   const [expanded, setExpanded] = useState(false);
-  const [address, setAddress] = useState(null);
   const count = items.reduce((sum, line) => sum + (Number(line.quantity) || 0), 0);
 
-  const [pos, setPos] = useState(() =>
-    typeof window !== "undefined" && window.innerWidth < 640
-      ? { x: window.innerWidth - 84, y: window.innerHeight * 0.62 }
-      : { x: (typeof window !== "undefined" ? window.innerWidth : 1200) - 100, y: 380 }
-  );
+  // Position on real mount viewport — never server-rendered (SSR has no
+  // window, and hydration of a guessed position leaves the button stuck).
+  const [pos, setPos] = useState(null);
   const dragState = useRef(null);
+
+  useEffect(() => {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    setPos(
+      vw < 640
+        ? { x: vw - 76, y: vh * 0.55 }
+        : { x: vw - 100, y: 320 }
+    );
+  }, []);
 
   useEffect(() => {
     const open = () => setExpanded(true);
@@ -473,7 +534,7 @@ export default function CartBubble() {
     dragState.current = null;
   };
 
-  if (!count) return null;
+  if (!count || !pos) return null;
 
   // Panel opens toward wherever there is more room, anchored to the bubble.
   const vw = typeof window !== "undefined" ? window.innerWidth : 1200;
@@ -497,7 +558,7 @@ export default function CartBubble() {
       {/* Expanding panel — anchored to the bubble, no backdrop */}
       {expanded ? (
         <div className="fixed z-[55]" style={panelStyle}>
-          <CartPanel address={address} setAddress={setAddress} onCollapse={() => setExpanded(false)} />
+          <CartPanel onCollapse={() => setExpanded(false)} />
         </div>
       ) : null}
 
