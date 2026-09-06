@@ -185,6 +185,17 @@ export async function verifyOtp({ phone, otp }) {
   });
 }
 
+export async function forgotPassword(phone) {
+  return apiRequest("/api/v1/auth/forgot-password", { method: "POST", body: { phone } });
+}
+
+export async function resetPassword({ phone, otp, newPassword }) {
+  return apiRequest("/api/v1/auth/reset-password", {
+    method: "POST",
+    body: { phone, otp, new_password: newPassword },
+  });
+}
+
 export async function checkoutOrder(payload, token) {
   return apiRequest("/api/v1/orders/checkout", {
     method: "POST",

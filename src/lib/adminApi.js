@@ -114,6 +114,8 @@ export const adminApi = {
     }),
   chefs: () => adminRequest("/api/admin/chefs"),
   createChef: (payload) => adminRequest("/api/admin/chefs", { method: "POST", body: payload }),
+  approveChef: (phone) => adminRequest(`/api/admin/chefs/${encodeURIComponent(phone)}/approve`, { method: "POST" }),
+  rejectChef: (phone) => adminRequest(`/api/admin/chefs/${encodeURIComponent(phone)}/reject`, { method: "POST" }),
   drivers: () => adminRequest("/api/admin/drivers"),
   createDriver: (payload) => adminRequest("/api/admin/drivers", { method: "POST", body: payload }),
   seed: () => adminRequest("/api/admin/seed-chefs-and-riders", { method: "POST" }),

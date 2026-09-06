@@ -46,6 +46,23 @@ function ChefGate({ children }) {
   return children;
 }
 
+function PendingApprovalBanner() {
+  const { kitchen } = useChefDashboard();
+  if (!kitchen?.kitchenName || kitchen?.isVerified !== false) return null;
+  return (
+    <div className="mb-5 bg-amber-50 border border-amber-200 rounded-2xl p-4">
+      <p className="text-sm font-bold text-amber-900">
+        ⏳ Your kitchen is pending Homatri verification
+      </p>
+      <p className="text-xs text-amber-800 mt-1 leading-relaxed">
+        We&apos;re reviewing your details — customers can&apos;t see your kitchen yet and orders
+        are off. This usually takes under 24 hours. You can set up your menu and content plan
+        meanwhile; everything goes live the moment we approve you.
+      </p>
+    </div>
+  );
+}
+
 export default function ChefLayout({ children }) {
   const pathname = usePathname();
   if (pathname?.startsWith("/chef/onboarding")) {
@@ -56,7 +73,10 @@ export default function ChefLayout({ children }) {
       <ChefGate>
         <div className="min-h-screen bg-homatri-cream flex flex-col lg:flex-row">
           <LeftSidebarNav />
-          <main className="flex-1 px-4 sm:px-8 py-6 lg:py-10 max-w-5xl w-full">{children}</main>
+          <main className="flex-1 px-4 sm:px-8 py-6 lg:py-10 max-w-5xl w-full">
+            <PendingApprovalBanner />
+            {children}
+          </main>
         </div>
       </ChefGate>
     </ChefDashboardProvider>
