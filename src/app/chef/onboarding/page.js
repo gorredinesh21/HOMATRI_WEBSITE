@@ -27,6 +27,7 @@ export default function ChefOnboardingPage() {
     latitude: 19.1197,
     longitude: 73.0078,
     payout_upi_id: "",
+    password: "",
     avatar_url: CARTOON_AVATARS[0].id,
   });
 
@@ -34,7 +35,7 @@ export default function ChefOnboardingPage() {
 
   const canNext = useMemo(() => {
     if (step === 0) return form.chef_name && form.kitchen_name && form.bio && form.hometown_region && form.chef_phone.length >= 10;
-    if (step === 1) return /^\d{14}$/.test(form.fssai_license_number);
+    if (step === 1) return true; // FSSAI optional at signup — add later
     if (step === 2) return form.address_line1 && form.daily_capacity >= 1;
     return /.+@.+/.test(form.payout_upi_id);
   }, [form, step]);
@@ -102,7 +103,8 @@ export default function ChefOnboardingPage() {
           </>
         )}
         {step === 1 && (
-          <Field label="14-digit FSSAI license" value={form.fssai_license_number} onChange={(v) => setField("fssai_license_number", v.replace(/\D/g, "").slice(0, 14))} placeholder="14 digits" />
+          <Field label="FSSAI license (optional — add anytime)" value={form.fssai_license_number} onChange={(v) => setField("fssai_license_number", v.replace(/\D/g, "").slice(0, 14))} placeholder="14 digits, or skip for now" />
+          <Field label="Create a password (to log back in)" value={form.password} onChange={(v) => setField("password", v)} placeholder="At least 4 characters" type="password" />
         )}
         {step === 2 && (
           <>
