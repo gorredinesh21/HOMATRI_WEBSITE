@@ -172,6 +172,32 @@ export default function SwipeCardDeck({
 
   return (
     <div className="relative max-w-md mx-auto">
+      {/* Prev / Next — above the chef card, labelled */}
+      <div className="flex items-center justify-between mb-3">
+        <button
+          type="button"
+          onClick={() => {
+            setHasSwipedOnce(true);
+            onPrevious?.();
+          }}
+          className="inline-flex items-center gap-1.5 bg-white border border-homatri-border rounded-full px-4 py-2 text-sm font-bold text-homatri-dark shadow-sm hover:border-homatri-orange hover:text-homatri-orange transition-colors"
+        >
+          <ChevronLeft className="w-4 h-4" /> Previous
+        </button>
+        <span className="text-xs font-bold text-homatri-muted tabular-nums">
+          {activeIndex + 1} / {kitchens.length}
+        </span>
+        <button
+          type="button"
+          onClick={() => {
+            setHasSwipedOnce(true);
+            onNext?.();
+          }}
+          className="inline-flex items-center gap-1.5 bg-white border border-homatri-border rounded-full px-4 py-2 text-sm font-bold text-homatri-dark shadow-sm hover:border-homatri-orange hover:text-homatri-orange transition-colors"
+        >
+          Next <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
       <div
         className="relative h-[620px] touch-pan-y"
         onPointerDown={onPointerDown}
@@ -211,33 +237,6 @@ export default function SwipeCardDeck({
               <div className="h-full flex flex-col">
                 <div className="shrink-0">
                   <PhotoCarousel photos={kitchenPhotos(kitchen)} alt={kitchen.kitchenName} />
-                </div>
-                <div className="px-4 pt-2.5 shrink-0 flex items-center justify-between">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setHasSwipedOnce(true);
-                      onPrevious?.();
-                    }}
-                    className="w-8 h-8 rounded-full border border-homatri-border flex items-center justify-center hover:bg-homatri-sand"
-                    aria-label="Previous kitchen"
-                  >
-                    <ChevronLeft className="w-4 h-4 text-homatri-dark" />
-                  </button>
-                  <span className="text-[11px] font-bold text-homatri-muted tabular-nums">
-                    {activeIndex + 1} / {kitchens.length}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setHasSwipedOnce(true);
-                      onNext?.();
-                    }}
-                    className="w-8 h-8 rounded-full border border-homatri-border flex items-center justify-center hover:bg-homatri-sand"
-                    aria-label="Next kitchen"
-                  >
-                    <ChevronRight className="w-4 h-4 text-homatri-dark" />
-                  </button>
                 </div>
                 <div className="px-4 pb-2 shrink-0 flex items-start justify-between gap-2">
                   <div className="min-w-0">
