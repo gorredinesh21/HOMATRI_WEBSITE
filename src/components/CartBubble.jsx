@@ -332,7 +332,7 @@ function CartPanel({ onCollapse }) {
   };
 
   return (
-    <div className="w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl max-h-[88dvh] shadow-2xl border border-homatri-border flex flex-col overflow-hidden">
+    <div className="w-full bg-white rounded-3xl shadow-2xl border border-homatri-border flex flex-col overflow-hidden cart-card-pop">
       <div className="flex items-center justify-between p-4 border-b border-homatri-border shrink-0">
         <div className="min-w-0">
           <p className="font-display text-lg font-medium text-homatri-dark truncate">Your order</p>
@@ -536,12 +536,32 @@ export default function CartBubble() {
 
   if (!count || !pos) return null;
 
+  // Collapsible card anchored to the bubble: always grows UP from the
+  // bubble (never slides from the bottom), clamped to the viewport.
+  const vw = typeof window !== "undefined" ? window.innerWidth : 390;
+  const vh = typeof window !== "undefined" ? window.innerHeight : 800;
+  const panelWidth = Math.min(vw * 0.92, 360);
+  const openUpward = pos.y > vh * 0.45;
+  const panelStyle = openUpward
+    ? {
+        left: Math.min(Math.max(pos.x - panelWidth + 60, 8), vw - panelWidth - 8),
+        bottom: Math.min(Math.max(vh - pos.y + 62, 8), vh - 8),
+        maxHeight: Math.max(pos.y - 80, 180),
+        transformOrigin: "bottom right",
+      }
+    : {
+        left: Math.min(Math.max(pos.x - panelWidth + 60, 8), vw - panelWidth - 8),
+        top: pos.y + 62,
+        maxHeight: Math.max(vh - pos.y - 80, 180),
+        transformOrigin: "top right",
+      };
+
   return (
     <>
-      {/* Full bill popup — bottom sheet on phones, centered on desktop.
-          Opens on bubble tap; tap the bubble again or ✕ to close. */}
+      {/* The bill card — expands in place from the bubble, no backdrop.
+          Tap the bubble again or ✕ to collapse. */}
       {expanded ? (
-        <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4">
+        <div className="fixed z-[61]" style={panelStyle}>
           <CartPanel onCollapse={() => setExpanded(false)} />
         </div>
       ) : null}
@@ -555,7 +575,7 @@ export default function CartBubble() {
         aria-label={`${expanded ? "Collapse" : "Open"} cart with ${count} items`}
         aria-expanded={expanded}
         style={{ left: pos.x, top: pos.y }}
-        className={`fixed z-[56] flex items-center gap-2 text-white rounded-full shadow-2xl border-2 border-white/60 touch-none select-none cursor-pointer transition-colors ${
+        className={`fixed z-[62] flex items-center gap-2 text-white rounded-full shadow-2xl border-2 border-white/60 touch-none select-none cursor-pointer transition-colors ${
           expanded ? "bg-homatri-forest pr-4 pl-3 py-2.5" : "bg-homatri-orange pl-3 pr-4 py-2.5"
         }`}
       >
