@@ -372,6 +372,10 @@ export async function chefPatchKitchen(body, token) {
   return apiRequest("/api/v1/chef/me/kitchen", { method: "PATCH", token, body });
 }
 
+export async function fetchChefEarningsHistory(token) {
+  return apiRequest("/api/v1/chef/me/earnings/history", { token });
+}
+
 export async function fetchChefContentPlan(token) {
   return apiRequest("/api/v1/chef/me/content-plan", { token });
 }

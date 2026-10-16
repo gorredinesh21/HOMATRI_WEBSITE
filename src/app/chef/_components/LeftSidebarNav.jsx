@@ -13,6 +13,7 @@ import {
   MessageSquareHeart,
   Wallet,
   Settings,
+  GraduationCap,
   Menu,
   X,
 } from "lucide-react";
@@ -28,46 +29,18 @@ const NAV = [
   { key: "CONTENT_PLAN", href: "/chef/content", label: "30-Day Reel Plan", icon: Clapperboard },
   { key: "DIETARY_REQUESTS", href: "/chef/requests", label: "Dietary Requests", icon: MessageSquareHeart },
   { key: "EARNINGS", href: "/chef/earnings", label: "Earnings", icon: Wallet },
+  { key: "UPSKILLING", href: "/chef/upskilling", label: "Upskilling", icon: GraduationCap },
   { key: "SETTINGS", href: "/chef/settings", label: "Kitchen Settings", icon: Settings },
 ];
 
 export default function LeftSidebarNav() {
   const pathname = usePathname();
-  const { kitchen, acceptingOrders, error } = useChefDashboard();
-  const { token, requireAuthentication, customerPhone } = useAuth();
+  const { kitchen, acceptingOrders } = useChefDashboard();
+  const { customerPhone } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
 
-  const wrongRole = Boolean(token) && String(error || "").includes("CHEF");
-
-  const signInCard = !token ? (
-    <div className="mb-3 rounded-xl border border-homatri-orange/40 bg-homatri-orange-light p-3">
-      <p className="text-xs font-bold text-homatri-dark">Chef sign in required</p>
-      <p className="text-[11px] text-homatri-muted mt-0.5">
-        Sign in with your kitchen&apos;s phone &amp; password to see orders, menus and payouts.
-      </p>
-      <button
-        type="button"
-        onClick={() => requireAuthentication(() => {})}
-        className="mt-2 w-full bg-homatri-orange hover:bg-homatri-orange-dark text-white text-xs font-bold py-2 rounded-lg"
-      >
-        Sign in to your kitchen
-      </button>
-      <a
-        href="/chef/onboarding"
-        className="mt-1.5 block text-center text-[11px] font-semibold text-homatri-orange hover:underline"
-      >
-        New homemaker? Onboard your kitchen →
-      </a>
-    </div>
-  ) : wrongRole ? (
-    <div className="mb-3 rounded-xl border border-amber-300 bg-amber-50 p-3">
-      <p className="text-xs font-bold text-amber-800">This account is not a chef kitchen</p>
-      <p className="text-[11px] text-amber-700 mt-0.5">
-        You&apos;re signed in as +91 {customerPhone || ""} (customer). Sign in with your kitchen&apos;s phone number.
-      </p>
-    </div>
-  ) : (
+  const sessionCard = (
     <p className="mb-3 px-1 text-[11px] text-homatri-muted truncate">+91 {customerPhone || ""}</p>
   );
 
@@ -114,7 +87,7 @@ export default function LeftSidebarNav() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            {signInCard}
+            {sessionCard}
             {links}
           </aside>
         </div>
@@ -146,7 +119,7 @@ export default function LeftSidebarNav() {
           ) : null}
         </div>
         <div className="p-3 flex-1">
-          {!isCollapsed ? signInCard : null}
+          {!isCollapsed ? sessionCard : null}
           {links}
         </div>
         <button

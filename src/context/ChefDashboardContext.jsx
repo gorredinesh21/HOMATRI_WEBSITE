@@ -41,6 +41,7 @@ export function ChefDashboardProvider({ children }) {
     }
     const data = await fetchChefDashboard(token);
     setSnapshot(data);
+    setError(null);
   }, [token]);
 
   useEffect(() => {

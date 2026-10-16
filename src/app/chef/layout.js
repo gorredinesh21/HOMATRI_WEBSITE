@@ -1,48 +1,149 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useState } from "react";
 import { ChefDashboardProvider, useChefDashboard } from "@/context/ChefDashboardContext";
 import { useAuth } from "@/context/AuthContext";
 import LeftSidebarNav from "./_components/LeftSidebarNav";
 
-// Whole-portal gate: no session, or a session that is not a chef kitchen,
-// sees a sign-in screen instead of the (empty) dashboard.
+// Whole-portal gate. Chef credentials (kitchen phone + password) are issued by
+// the Homatri team — there is no self-signup for kitchens. No session, or a
+// session that is not a chef kitchen, sees the sign-in screen instead of the
+// (empty) dashboard.
 function ChefGate({ children }) {
-  const { token, requireAuthentication, customerPhone } = useAuth();
+  const { token, user, customerPhone, loginWithPassword, logout } = useAuth();
   const { error } = useChefDashboard();
-  const wrongRole = Boolean(token) && String(error || "").includes("CHEF");
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [formError, setFormError] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  if (!token || wrongRole) {
+  const sessionRole = user?.role || user?.profile?.role;
+  const wrongRole =
+    Boolean(token) &&
+    (sessionRole ? sessionRole !== "CHEF" : String(error || "").includes("CHEF"));
+
+  async function handleSignIn(event) {
+    event.preventDefault();
+    setFormError(null);
+    const digits = (phone || "")
+      .replace(/\D/g, "")
+      .replace(/^91(?=[6-9])/, "")
+      .replace(/^0+/, "");
+    if (!/^[6-9]\d{9}$/.test(digits)) {
+      setFormError("Enter your kitchen's 10-digit mobile number.");
+      return;
+    }
+    if (!password) {
+      setFormError("Enter the password the Homatri team gave you.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const result = await loginWithPassword({ phone: digits, password });
+      if (result?.role && result.role !== "CHEF") {
+        await logout();
+        setFormError("This phone number is not a chef kitchen. Sign in with your kitchen's number.");
+      }
+    } catch (err) {
+      setFormError(err?.message || "Log in failed. Check the phone number and password.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  if (wrongRole) {
     return (
       <div className="min-h-screen bg-homatri-cream flex items-center justify-center px-4">
         <div className="w-full max-w-md bg-white border border-homatri-border rounded-3xl p-8 text-center space-y-4">
           <p className="font-display italic text-homatri-orange">Homatri Kitchen</p>
           <h1 className="font-display text-2xl font-medium text-homatri-dark">
-            {wrongRole ? "This account is not a chef kitchen" : "Chef sign in required"}
+            This account is not a chef kitchen
           </h1>
           <p className="text-sm text-homatri-muted">
-            {wrongRole
-              ? `You're signed in as +91 ${customerPhone || ""} (customer). Sign in with your kitchen's phone number.`
-              : "Sign in with your kitchen's phone & password to manage orders, menus and payouts."}
+            You&apos;re signed in as +91 {customerPhone || ""}. Sign in with your kitchen&apos;s
+            phone number to manage orders.
           </p>
           <button
             type="button"
-            onClick={() => requireAuthentication(() => {})}
+            onClick={() => logout()}
             className="w-full bg-homatri-orange hover:bg-homatri-orange-dark text-white font-bold py-3 rounded-xl text-sm"
           >
-            Sign in to your kitchen
+            Switch to kitchen account
           </button>
-          <Link
-            href="/chef/onboarding"
-            className="block text-xs font-semibold text-homatri-orange hover:underline"
-          >
-            New homemaker? Onboard your kitchen →
-          </Link>
         </div>
       </div>
     );
   }
+
+  if (!token) {
+    return (
+      <div className="min-h-screen bg-homatri-cream flex items-center justify-center px-4">
+        <div className="w-full max-w-md bg-white border border-homatri-border rounded-3xl p-8 space-y-5">
+          <div className="text-center space-y-1">
+            <p className="font-display italic text-homatri-orange">Homatri Kitchen</p>
+            <h1 className="font-display text-2xl font-medium text-homatri-dark">
+              Sign in to your kitchen
+            </h1>
+            <p className="text-sm text-homatri-muted">
+              Your login is your kitchen&apos;s phone number and the password the Homatri team
+              gave you.
+            </p>
+          </div>
+          <form onSubmit={handleSignIn} className="space-y-4" noValidate>
+            <label className="block">
+              <span className="text-xs font-semibold uppercase tracking-wider text-homatri-muted">
+                Kitchen phone number
+              </span>
+              <div className="mt-1 flex items-center rounded-xl border border-homatri-border focus-within:border-homatri-orange overflow-hidden">
+                <span className="pl-3 pr-2 text-sm text-homatri-muted border-r border-homatri-border py-2.5">
+                  +91
+                </span>
+                <input
+                  type="tel"
+                  inputMode="numeric"
+                  autoComplete="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="98765 43210"
+                  className="w-full px-3 py-2.5 text-sm text-homatri-dark outline-none"
+                />
+              </div>
+            </label>
+            <label className="block">
+              <span className="text-xs font-semibold uppercase tracking-wider text-homatri-muted">
+                Password
+              </span>
+              <input
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Given by Homatri"
+                className="mt-1 w-full rounded-xl border border-homatri-border focus:border-homatri-orange px-3 py-2.5 text-sm text-homatri-dark outline-none"
+              />
+            </label>
+            {formError ? (
+              <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-3 py-2">
+                {formError}
+              </p>
+            ) : null}
+            <button
+              type="submit"
+              disabled={submitting}
+              className="w-full bg-homatri-orange hover:bg-homatri-orange-dark disabled:opacity-60 text-white font-bold py-3 rounded-xl text-sm"
+            >
+              {submitting ? "Signing in…" : "Sign in to your kitchen"}
+            </button>
+          </form>
+          <p className="text-xs text-homatri-muted text-center leading-relaxed">
+            Chef accounts are created by the Homatri team. Forgot your password or can&apos;t sign
+            in? WhatsApp us — we&apos;ll reset it for you.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return children;
 }
 
@@ -64,10 +165,6 @@ function PendingApprovalBanner() {
 }
 
 export default function ChefLayout({ children }) {
-  const pathname = usePathname();
-  if (pathname?.startsWith("/chef/onboarding")) {
-    return <div className="min-h-screen bg-homatri-cream">{children}</div>;
-  }
   return (
     <ChefDashboardProvider>
       <ChefGate>
