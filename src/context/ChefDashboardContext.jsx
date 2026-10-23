@@ -4,9 +4,11 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { useAuth } from "@/context/AuthContext";
 import {
   chefCreateMenu,
+  chefDeleteMenu,
   chefLockBatch,
   chefMarkPacked,
   chefPatchKitchen,
+  chefPatchMenu,
   chefPauseKitchen,
   chefSetAccepting,
   chefToggleStock,
@@ -113,15 +115,57 @@ export function ChefDashboardProvider({ children }) {
             description: item.description,
             unit_price: Number(item.unitPrice),
             meal_type: item.mealWindow || "LUNCH",
-            is_available: true,
+            dietary_tag: item.dietaryTag || "VEG",
+            is_available: item.availability !== "SOLD_OUT",
           },
           token
-        )
+        ),
+        "Dish added to your menu."
       );
     },
     [run, token]
   );
-  const updateMenuItem = useCallback(async () => {}, []);
+  const updateMenuItem = useCallback(
+    async (item) => {
+      await run(
+        () =>
+          chefPatchMenu(
+            item.menuItemId,
+            {
+              dish_name: item.itemName,
+              description: item.description,
+              unit_price: Number(item.unitPrice),
+              meal_type: item.mealWindow || "LUNCH",
+              dietary_tag: item.dietaryTag || "VEG",
+              is_available: item.availability !== "SOLD_OUT",
+            },
+            token
+          ),
+        "Dish updated."
+      );
+    },
+    [run, token]
+  );
+  const deleteMenuItem = useCallback(
+    async (menuItemId) => {
+      setError(null);
+      try {
+        const result = await chefDeleteMenu(menuItemId, token);
+        await refresh();
+        setNotice(
+          result?.archived
+            ? "Dish removed from your menu. It stays in past order records."
+            : "Dish deleted."
+        );
+        return result;
+      } catch (err) {
+        setError(err.message);
+        setNotice(err.message);
+        return null;
+      }
+    },
+    [refresh, token]
+  );
   const toggleAvailability = useCallback(
     (menuItemId) => run(() => chefToggleStock(menuItemId, token)),
     [run, token]
@@ -181,6 +225,7 @@ export function ChefDashboardProvider({ children }) {
       menuItems,
       createMenuItem,
       updateMenuItem,
+      deleteMenuItem,
       toggleAvailability,
       orders,
       rider,
@@ -210,6 +255,7 @@ export function ChefDashboardProvider({ children }) {
       menuItems,
       createMenuItem,
       updateMenuItem,
+      deleteMenuItem,
       toggleAvailability,
       orders,
       rider,

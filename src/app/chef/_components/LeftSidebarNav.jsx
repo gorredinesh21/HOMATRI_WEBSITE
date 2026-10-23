@@ -16,6 +16,7 @@ import {
   GraduationCap,
   Menu,
   X,
+  LogOut,
 } from "lucide-react";
 import { useChefDashboard } from "@/context/ChefDashboardContext";
 import { useAuth } from "@/context/AuthContext";
@@ -36,9 +37,26 @@ const NAV = [
 export default function LeftSidebarNav() {
   const pathname = usePathname();
   const { kitchen, acceptingOrders } = useChefDashboard();
-  const { customerPhone } = useAuth();
+  const { customerPhone, logout } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
+
+  const handleLogout = () => {
+    setIsMobileDrawerOpen(false);
+    logout();
+  };
+
+  const logoutButton = (className) => (
+    <button
+      type="button"
+      onClick={handleLogout}
+      className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-homatri-muted hover:bg-red-50 hover:text-red-600 transition-colors ${className || ""}`}
+      title="Log out of your kitchen"
+    >
+      <LogOut className="w-4 h-4 shrink-0" />
+      {!isCollapsed ? <span className="font-medium">Log out</span> : null}
+    </button>
+  );
 
   const sessionCard = (
     <p className="mb-3 px-1 text-[11px] text-homatri-muted truncate">+91 {customerPhone || ""}</p>
@@ -89,6 +107,9 @@ export default function LeftSidebarNav() {
             </div>
             {sessionCard}
             {links}
+            <div className="pt-2 mt-2 border-t border-homatri-border">
+              {logoutButton("w-full")}
+            </div>
           </aside>
         </div>
       ) : null}
@@ -121,6 +142,9 @@ export default function LeftSidebarNav() {
         <div className="p-3 flex-1">
           {!isCollapsed ? sessionCard : null}
           {links}
+        </div>
+        <div className="px-3 pb-1">
+          {logoutButton("w-full")}
         </div>
         <button
           type="button"

@@ -364,6 +364,10 @@ export async function chefPatchMenu(menuItemId, body, token) {
   return apiRequest(`/api/v1/chef/me/menu/${menuItemId}`, { method: "PATCH", token, body });
 }
 
+export async function chefDeleteMenu(menuItemId, token) {
+  return apiRequest(`/api/v1/chef/me/menu/${menuItemId}`, { method: "DELETE", token });
+}
+
 export async function chefToggleStock(menuItemId, token) {
   return apiRequest(`/api/v1/chef/me/menu/${menuItemId}/stock`, { method: "PATCH", token });
 }
