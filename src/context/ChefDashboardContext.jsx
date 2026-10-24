@@ -117,6 +117,9 @@ export function ChefDashboardProvider({ children }) {
             meal_type: item.mealWindow || "LUNCH",
             dietary_tag: item.dietaryTag || "VEG",
             is_available: item.availability !== "SOLD_OUT",
+            max_availability: Number.isFinite(Number(item.maxAvailability))
+              ? Number(item.maxAvailability)
+              : 10,
           },
           token
         ),
@@ -138,6 +141,9 @@ export function ChefDashboardProvider({ children }) {
               meal_type: item.mealWindow || "LUNCH",
               dietary_tag: item.dietaryTag || "VEG",
               is_available: item.availability !== "SOLD_OUT",
+              max_availability: Number.isFinite(Number(item.maxAvailability))
+                ? Number(item.maxAvailability)
+                : 0,
             },
             token
           ),
