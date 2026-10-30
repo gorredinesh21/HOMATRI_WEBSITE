@@ -1,9 +1,79 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { BadgeCheck, Check, X } from "lucide-react";
+import { BadgeCheck, Check, ChevronDown, X } from "lucide-react";
 import { adminApi } from "@/lib/adminApi";
 import { normalizeCollection } from "@/lib/adminNormalize";
+
+function ChefMenuPanel({ phone }) {
+  const [open, setOpen] = useState(false);
+  const [items, setItems] = useState(null);
+  const [error, setError] = useState(null);
+
+  const load = useCallback(async () => {
+    try {
+      const res = await adminApi.chefMenu(phone);
+      setItems(res?.items ?? []);
+      setError(null);
+    } catch (err) {
+      setError(err.message);
+    }
+  }, [phone]);
+
+  useEffect(() => {
+    if (open && items === null) load();
+  }, [open, items, load]);
+
+  const live = items?.filter((m) => !m.is_archived) ?? [];
+  const archived = items?.filter((m) => m.is_archived) ?? [];
+
+  return (
+    <div className="mt-3 border-t pt-2">
+      <button
+        type="button"
+        className="flex items-center gap-1.5 text-xs font-semibold text-homatri-orange"
+        onClick={() => setOpen((v) => !v)}
+      >
+        <ChevronDown className={`w-3.5 h-3.5 transition-transform ${open ? "rotate-180" : ""}`} />
+        View menu {items ? `(${live.length} dishes)` : ""}
+      </button>
+      {open ? (
+        <div className="mt-2 space-y-1">
+          {error ? <p className="text-xs text-red-600">{error}</p> : null}
+          {items === null && !error ? <p className="text-xs text-homatri-muted">Loading…</p> : null}
+          {live.map((m) => (
+            <p key={m.menu_item_id} className="flex items-center gap-2 text-xs">
+              <span
+                className={`w-2 h-2 rounded-full shrink-0 ${
+                  m.dietary_tag === "VEG" || m.dietary_tag === "VEGAN"
+                    ? "bg-green-600"
+                    : m.dietary_tag === "NON_VEG"
+                      ? "bg-red-600"
+                      : "bg-gray-400"
+                }`}
+              />
+              <span className={m.is_available ? "" : "line-through opacity-60"}>{m.dish_name}</span>
+              <span className="text-homatri-muted">
+                ₹{Number(m.unit_price).toLocaleString("en-IN")} · {m.meal_type}
+                {m.is_available ? "" : " · unavailable"}
+              </span>
+            </p>
+          ))}
+          {archived.length > 0 ? (
+            <details className="text-xs text-homatri-muted">
+              <summary className="cursor-pointer">{archived.length} archived</summary>
+              {archived.map((m) => (
+                <p key={m.menu_item_id} className="line-through opacity-60">
+                  {m.dish_name} ₹{Number(m.unit_price).toLocaleString("en-IN")}
+                </p>
+              ))}
+            </details>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 export default function AdminChefsPage() {
   const [chefs, setChefs] = useState([]);
@@ -100,6 +170,7 @@ export default function AdminChefsPage() {
                   </button>
                 </div>
               ) : null}
+              <ChefMenuPanel phone={chef.chef_phone} />
             </article>
           );
         })}

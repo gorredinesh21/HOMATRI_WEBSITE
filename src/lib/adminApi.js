@@ -112,6 +112,18 @@ export const adminApi = {
       method: "POST",
       body: { session_id, admin_notes, custom_reply: custom_reply || null },
     }),
+  orders: ({ status_filter, chef_phone, service_date_from, service_date_to, q, limit = 100, offset = 0 } = {}) => {
+    const params = new URLSearchParams();
+    if (status_filter) params.set("status_filter", status_filter);
+    if (chef_phone) params.set("chef_phone", chef_phone);
+    if (service_date_from) params.set("service_date_from", service_date_from);
+    if (service_date_to) params.set("service_date_to", service_date_to);
+    if (q) params.set("q", q);
+    params.set("limit", String(limit));
+    params.set("offset", String(offset));
+    return adminRequest(`/api/admin/orders?${params.toString()}`);
+  },
+  chefMenu: (phone) => adminRequest(`/api/admin/chefs/${encodeURIComponent(phone)}/menu`),
   chefs: () => adminRequest("/api/admin/chefs"),
   createChef: (payload) => adminRequest("/api/admin/chefs", { method: "POST", body: payload }),
   approveChef: (phone) => adminRequest(`/api/admin/chefs/${encodeURIComponent(phone)}/approve`, { method: "POST" }),

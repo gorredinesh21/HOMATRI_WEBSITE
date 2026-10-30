@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import {
   Activity,
+  ClipboardList,
   MessageSquare,
   Timer,
   AlertTriangle,
@@ -19,6 +20,7 @@ import { useAdminAuth } from "@/context/AdminAuthContext";
 
 const NAV = [
   { href: "/admin", label: "Order Pipeline", icon: Activity, exact: true },
+  { href: "/admin/orders", label: "Order History", icon: ClipboardList },
   { href: "/admin/pipeline", label: "Pipeline detail", icon: Activity },
   { href: "/admin/chats", label: "Live Chat Stream", icon: MessageSquare },
   { href: "/admin/cutoff", label: "Cutoff Engine", icon: Timer },
