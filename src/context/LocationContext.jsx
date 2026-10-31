@@ -1,10 +1,31 @@
 "use client";
 
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 const LocationContext = createContext(null);
 
 const DEFAULT_CLUSTER = "Ghansoli";
+const STORAGE_KEY = "homatri_location_v1";
+
+// Hyperlocal browsing: the saved pin decides which kitchens the customer sees.
+export function readSavedLocation() {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (typeof parsed?.latitude === "number" && typeof parsed?.longitude === "number") return parsed;
+  } catch {
+    /* corrupted entry — treat as absent */
+  }
+  return null;
+}
+
+export function persistLocation(entry) {
+  if (typeof window === "undefined") return;
+  if (entry) window.localStorage.setItem(STORAGE_KEY, JSON.stringify(entry));
+  else window.localStorage.removeItem(STORAGE_KEY);
+}
 
 export function LocationProvider({ children }) {
   const [activeCluster, setActiveCluster] = useState(DEFAULT_CLUSTER);
@@ -14,6 +35,19 @@ export function LocationProvider({ children }) {
   const [isResolved, setIsResolved] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [hydrated, setHydrated] = useState(false);
+
+  // Restore the saved delivery pin once on mount so hyperlocal filtering
+  // survives reloads without asking again.
+  useEffect(() => {
+    const saved = readSavedLocation();
+    if (saved) {
+      setLatitude(saved.latitude);
+      setLongitude(saved.longitude);
+      if (saved.label) setAddressState(saved.label);
+    }
+    setHydrated(true);
+  }, []);
 
   const setCluster = useCallback((cluster) => {
     setActiveCluster(cluster || null);
@@ -21,7 +55,7 @@ export function LocationProvider({ children }) {
     setError(null);
   }, []);
 
-  const setCoordinates = useCallback((lat, lon) => {
+  const setCoordinates = useCallback((lat, lon, label = null) => {
     if (lat != null && (lat < -90 || lat > 90)) {
       setError("Latitude must be between -90 and 90.");
       return;
@@ -32,7 +66,10 @@ export function LocationProvider({ children }) {
     }
     setLatitude(lat ?? null);
     setLongitude(lon ?? null);
-  }, []);
+    persistLocation(
+      lat != null && lon != null ? { latitude: lat, longitude: lon, label: label || address } : null
+    );
+  }, [address]);
 
   const setAddress = useCallback((nextAddress) => {
     setAddressState(nextAddress || null);
@@ -54,6 +91,7 @@ export function LocationProvider({ children }) {
     setLongitude(null);
     setAddressState(null);
     setIsResolved(false);
+    persistLocation(null);
   }, []);
 
   const value = useMemo(
@@ -65,6 +103,8 @@ export function LocationProvider({ children }) {
       isResolved,
       isLoading,
       error,
+      hydrated,
+      hasCoords: latitude != null && longitude != null,
       setCluster,
       setCoordinates,
       setAddress,
@@ -80,12 +120,13 @@ export function LocationProvider({ children }) {
       isResolved,
       isLoading,
       error,
+      hydrated,
       setCluster,
       setCoordinates,
       setAddress,
       setLocation,
       clearLocation,
-    ]
+    ],
   );
 
   return <LocationContext.Provider value={value}>{children}</LocationContext.Provider>;

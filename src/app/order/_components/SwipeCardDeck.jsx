@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, ShieldCheck, UtensilsCrossed } from "lucide-react";
+import { ChevronLeft, ChevronRight, MapPin, ShieldCheck, UtensilsCrossed } from "lucide-react";
 
 const isPhotoUrl = (url) => /\.(jpe?g|png|webp|gif)(\?|$)/i.test(String(url || ""));
 
@@ -256,6 +256,12 @@ export default function SwipeCardDeck({
                           Window closed
                         </span>
                       )}
+                      {kitchen.distance_km != null ? (
+                        <span className="inline-flex items-center gap-0.5 bg-homatri-forest-mist text-homatri-forest px-2 py-0.5 rounded-full text-[10px] font-bold">
+                          <MapPin className="w-2.5 h-2.5" />
+                          {kitchen.distance_km} km
+                        </span>
+                      ) : null}
                       <button
                         type="button"
                         onClick={() => onCardOpen?.(kitchen.chefId)}

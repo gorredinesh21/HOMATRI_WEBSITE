@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { MapPin } from "lucide-react";
 import DualTabHeader from "./_components/DualTabHeader";
 import ServingFilterBar from "./_components/ServingFilterBar";
 import SwipeCardDeck from "./_components/SwipeCardDeck";
@@ -11,6 +12,7 @@ import ReelFeed from "./_components/ReelFeed";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { useLocation } from "@/context/LocationContext";
+import LocationGate from "@/components/LocationGate";
 import { filterKitchens } from "@/lib/catalog";
 import { API_BASE_URL, fetchPublicChefs, fetchPublicReels, likeReel } from "@/lib/api";
 
@@ -40,11 +42,21 @@ function normalizeReel(raw) {
 
 export default function OrderPortalPage() {
   const searchParams = useSearchParams();
-  const { locationLabel, setCluster, activeCluster } = useLocation();
+  const {
+    locationLabel,
+    setCluster,
+    activeCluster,
+    latitude,
+    longitude,
+    hasCoords,
+    hydrated,
+    clearLocation,
+  } = useLocation();
   const { isAuthenticated, requireAuthentication, setIsAuthModalOpen, customerPhone, token } = useAuth();
   const { items, addItem, mealWindow } = useCart();
 
   const [activeTab, setActiveTab] = useState("KITCHENS");
+  const [gateOpen, setGateOpen] = useState(false);
   const [kitchens, setKitchens] = useState([]);
   const [kitchensStatus, setKitchensStatus] = useState("LOADING");
   const [kitchensError, setKitchensError] = useState("");
@@ -72,7 +84,9 @@ export default function OrderPortalPage() {
     setKitchensStatus("LOADING");
     setKitchensError("");
     try {
-      const remote = await fetchPublicChefs();
+      const remote = await fetchPublicChefs(
+        hasCoords ? { latitude, longitude } : {}
+      );
       const list = Array.isArray(remote) ? remote : remote?.chefs || remote?.data;
       setKitchens(Array.isArray(list) ? list : []);
       setKitchensStatus("READY");
@@ -81,7 +95,7 @@ export default function OrderPortalPage() {
       setKitchensError(err?.message || "Could not load kitchens.");
       setKitchensStatus("ERROR");
     }
-  }, []);
+  }, [hasCoords, latitude, longitude]);
 
   const loadReels = useCallback(async () => {
     setReelsStatus("LOADING");
@@ -99,9 +113,11 @@ export default function OrderPortalPage() {
   }, []);
 
   useEffect(() => {
-    loadKitchens();
+    // Wait for the saved delivery pin before fetching — kitchens are
+    // filtered server-side by 5 km around it.
+    if (hydrated && hasCoords) loadKitchens();
     loadReels();
-  }, [loadKitchens, loadReels]);
+  }, [hydrated, hasCoords, loadKitchens, loadReels]);
 
   const filtered = useMemo(
     () =>
@@ -265,8 +281,27 @@ export default function OrderPortalPage() {
         }}
       />
 
+      {hydrated && (!hasCoords || gateOpen) ? (
+        <LocationGate
+          onDone={() => setGateOpen(false)}
+        />
+      ) : null}
+
       {activeTab === "KITCHENS" ? (
         <main className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <p className="inline-flex items-center gap-1.5 text-xs font-semibold text-homatri-forest">
+              <MapPin className="w-3.5 h-3.5" />
+              Kitchens within 5 km of {locationLabel}
+            </p>
+            <button
+              type="button"
+              onClick={() => setGateOpen(true)}
+              className="text-xs font-bold text-homatri-orange hover:text-homatri-orange-dark"
+            >
+              Change location
+            </button>
+          </div>
           <ServingFilterBar
             currentlyServing={currentlyServing}
             onCurrentlyServingChange={setCurrentlyServing}
@@ -291,6 +326,24 @@ export default function OrderPortalPage() {
                 className="text-xs font-bold text-homatri-orange hover:text-homatri-orange-dark"
               >
                 Try again
+              </button>
+            </div>
+          ) : filtered.length === 0 && hasCoords ? (
+            <div className="rounded-3xl border border-dashed border-homatri-border bg-white p-10 text-center space-y-3 max-w-md mx-auto">
+              <MapPin className="w-8 h-8 mx-auto text-homatri-orange" />
+              <p className="font-display text-xl text-homatri-dark">
+                No kitchens within 5 km yet
+              </p>
+              <p className="text-sm text-homatri-muted leading-relaxed">
+                We&apos;re adding new home kitchens every week. Try another location
+                nearby, or tell us where you want us next.
+              </p>
+              <button
+                type="button"
+                onClick={() => setGateOpen(true)}
+                className="text-xs font-bold text-homatri-orange hover:text-homatri-orange-dark"
+              >
+                Change location
               </button>
             </div>
           ) : (

@@ -244,8 +244,14 @@ export async function respondDietaryRequest(requestId, action, counterOffer, tok
   });
 }
 
-export async function fetchPublicChefs() {
-  return apiRequest("/api/v1/kitchens");
+export async function fetchPublicChefs({ latitude, longitude } = {}) {
+  const params = new URLSearchParams();
+  if (latitude != null && longitude != null) {
+    params.set("latitude", String(latitude));
+    params.set("longitude", String(longitude));
+  }
+  const suffix = params.toString() ? `?${params}` : "";
+  return apiRequest(`/api/v1/kitchens${suffix}`);
 }
 
 export async function fetchFeaturedReviews(limit = 6) {
