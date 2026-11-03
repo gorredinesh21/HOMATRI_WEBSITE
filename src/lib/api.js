@@ -378,6 +378,34 @@ export async function chefToggleStock(menuItemId, token) {
   return apiRequest(`/api/v1/chef/me/menu/${menuItemId}/stock`, { method: "PATCH", token });
 }
 
+// Dish photo upload. `menuItemId` omitted = stage the image before the dish exists.
+export async function chefUploadDishImage(file, token, menuItemId = null) {
+  const form = new FormData();
+  form.append("file", file);
+  const path = menuItemId
+    ? `/api/v1/chef/me/menu/${menuItemId}/image`
+    : "/api/v1/chef/me/menu/image";
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: "POST",
+    headers: { Accept: "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    body: form,
+    credentials: "include",
+  });
+  const data = await parseJsonSafe(response);
+  if (!response.ok) {
+    const message = data?.detail || data?.message || `Upload failed (${response.status})`;
+    throw new Error(typeof message === "string" ? message : JSON.stringify(message));
+  }
+  return data;
+}
+
+// Public media URLs from the backend ("/media/...") need the proxy prefix.
+export function toBackendMediaUrl(url) {
+  if (!url) return url;
+  if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("data:")) return url;
+  return `${API_BASE_URL}${url.startsWith("/") ? url : `/${url}`}`;
+}
+
 export async function chefPatchKitchen(body, token) {
   return apiRequest("/api/v1/chef/me/kitchen", { method: "PATCH", token, body });
 }

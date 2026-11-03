@@ -6,6 +6,7 @@ import { useState } from "react";
 import {
   Activity,
   ClipboardList,
+  LayoutGrid,
   MessageSquare,
   Timer,
   AlertTriangle,
@@ -26,6 +27,7 @@ const NAV = [
   { href: "/admin/cutoff", label: "Cutoff Engine", icon: Timer },
   { href: "/admin/escalations", label: "Escalation HITL", icon: AlertTriangle },
   { href: "/admin/chefs", label: "Chefs & Menus", icon: ChefHat },
+  { href: "/admin/categories", label: "Menu Categories", icon: LayoutGrid },
   { href: "/admin/drivers", label: "Riders & Routes", icon: Bike },
   { href: "/admin/tools", label: "System Tools", icon: Wrench },
 ];

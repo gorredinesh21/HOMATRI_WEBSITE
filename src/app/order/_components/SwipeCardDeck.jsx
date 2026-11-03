@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, MapPin, ShieldCheck, UtensilsCrossed } from "lucide-react";
+import { toBackendMediaUrl } from "@/lib/api";
 
 const isPhotoUrl = (url) => /\.(jpe?g|png|webp|gif)(\?|$)/i.test(String(url || ""));
 
@@ -109,6 +110,88 @@ function PhotoCarousel({ photos, alt }) {
           </span>
         </>
       )}
+    </div>
+  );
+}
+
+// Compact pick-two combo banner for the swipe card: expands into two quick
+// selects and adds the tagged pair to the cart in one tap.
+function MiniComboBanner({ combo, kitchen, onOrderItem }) {
+  const [open, setOpen] = useState(false);
+  const [meal1, setMeal1] = useState("");
+  const [meal2, setMeal2] = useState("");
+
+  const dishes = useMemo(
+    () =>
+      (kitchen.menuItems || []).filter(
+        (i) => i.availability !== "SOLD_OUT" && i.categoryName && i.categoryName !== combo.name
+      ),
+    [kitchen.menuItems, combo.name]
+  );
+  const d1 = dishes.find((d) => d.menuItemId === meal1);
+  const d2 = dishes.find((d) => d.menuItemId === meal2);
+  const total = d1 && d2 ? d1.price + d2.price - (combo.comboDiscount || 0) : null;
+
+  if (!combo) return null;
+  return (
+    <div className="mt-2 rounded-xl border border-homatri-orange/40 bg-homatri-orange-light/50 px-3 py-2">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full text-left flex items-center justify-between gap-2"
+      >
+        <span className="text-[11px] font-bold text-homatri-dark">
+          🎁 {combo.name}
+          {combo.comboServes ? ` (serves ${combo.comboServes})` : ""}
+        </span>
+        <span className="text-[10px] font-bold text-homatri-orange shrink-0">
+          {open ? "Close" : `2 dishes · ₹${Math.round(combo.comboDiscount || 0)} off`}
+        </span>
+      </button>
+      {open ? (
+        <div className="mt-2 space-y-1.5">
+          {[
+            { label: "Meal 1", value: meal1, set: setMeal1, exclude: meal2 },
+            { label: "Meal 2", value: meal2, set: setMeal2, exclude: meal1 },
+          ].map(({ label, value, set, exclude }) => (
+            <select
+              key={label}
+              value={value}
+              onChange={(e) => set(e.target.value)}
+              className="w-full border border-homatri-border rounded-lg px-2 py-1.5 text-[11px] bg-white"
+              aria-label={label}
+            >
+              <option value="">{label} — choose…</option>
+              {dishes
+                .filter((d) => d.menuItemId !== exclude)
+                .map((d) => (
+                  <option key={d.menuItemId} value={d.menuItemId}>
+                    {d.itemName} · ₹{Math.round(d.price)}
+                  </option>
+                ))}
+            </select>
+          ))}
+          <button
+            type="button"
+            disabled={!d1 || !d2 || d1.menuItemId === d2.menuItemId}
+            onClick={() => {
+              for (const dish of [d1, d2]) {
+                onOrderItem?.(dish.menuItemId, 1, null, {
+                  item: dish,
+                  chef: kitchen,
+                  combo: { comboId: combo.categoryId, name: combo.name, discount: combo.comboDiscount },
+                });
+              }
+              setOpen(false);
+              setMeal1("");
+              setMeal2("");
+            }}
+            className="w-full bg-homatri-orange text-white text-[11px] font-bold py-1.5 rounded-lg disabled:opacity-50"
+          >
+            {total != null ? `Add pair · ₹${Math.round(total)}` : "Pick both meals"}
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -278,13 +361,43 @@ export default function SwipeCardDeck({
                   ) : null}
                 </div>
 
-                {/* Zomato-style compact menu — scrolls inside the card */}
+                {/* Zomato-style compact menu — category sections, scrolls inside the card */}
                 <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-3" data-menu-scroll>
                   <p className="text-[10px] font-bold uppercase tracking-wider text-homatri-muted mb-1.5 sticky top-0 bg-white pt-1">
                     Menu · tap + to add
                   </p>
-                  <ul className="divide-y divide-homatri-border/70">
-                    {(kitchen.menuItems || []).map((item) => {
+                  {(kitchen.categories || [])
+                    .filter((c) => c.pricingType === "PAIR_COMBO")
+                    .map((combo) => (
+                      <MiniComboBanner
+                        key={combo.categoryId}
+                        combo={combo}
+                        kitchen={kitchen}
+                        onOrderItem={onOrderItem}
+                      />
+                    ))}
+                  {(kitchen.menuItems || []).length === 0 && (kitchen.categories || []).length === 0 ? (
+                    <p className="text-[11px] text-homatri-muted py-3">Menu coming soon.</p>
+                  ) : null}
+                  {(() => {
+                    const groups = [];
+                    const index = new Map();
+                    for (const item of kitchen.menuItems || []) {
+                      const key = item.categoryName || "More dishes";
+                      if (!index.has(key)) {
+                        const group = { name: key, items: [] };
+                        index.set(key, group);
+                        groups.push(group);
+                      }
+                      index.get(key).items.push(item);
+                    }
+                    return groups.map((group) => (
+                      <div key={group.name}>
+                        <p className="text-[9px] font-bold uppercase tracking-wider text-homatri-orange bg-homatri-orange-light/60 rounded-full px-2 py-0.5 mt-2.5 mb-1 inline-block">
+                          {group.name}
+                        </p>
+                        <ul className="divide-y divide-homatri-border/70">
+                        {group.items.map((item) => {
                       const inCart = cartItems.find((line) => line.menuItemId === item.menuItemId);
                       const isNonVeg = /NON/i.test(String(item.dietaryTag || ""));
                       return (
@@ -313,7 +426,7 @@ export default function SwipeCardDeck({
                             <span className="w-12 h-12 rounded-xl border border-dashed border-homatri-forest/30 bg-homatri-forest-mist flex items-center justify-center overflow-hidden">
                               {item.imageUrl ? (
                                 /* eslint-disable-next-line @next/next/no-img-element */
-                                <img src={item.imageUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
+                                <img src={toBackendMediaUrl(item.imageUrl)} alt="" className="w-full h-full object-cover" loading="lazy" />
                               ) : (
                                 <UtensilsCrossed className="w-4 h-4 text-homatri-forest/40" />
                               )}
@@ -334,7 +447,10 @@ export default function SwipeCardDeck({
                         </li>
                       );
                     })}
-                  </ul>
+                        </ul>
+                      </div>
+                    ));
+                  })()}
                   <a
                     href={`/bulk?chef=${encodeURIComponent(kitchen.chefName || kitchen.kitchenName)}`}
                     className="mt-3 block text-center text-[10px] font-bold text-homatri-muted hover:text-homatri-orange"

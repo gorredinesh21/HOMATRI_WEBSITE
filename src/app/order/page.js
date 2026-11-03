@@ -176,6 +176,9 @@ export default function OrderPortalPage() {
         lineTotalDisplay: resolved.item.price * quantity,
         kitchenName: resolved.kitchen.kitchenName,
         customNote: note,
+        comboId: extras?.combo?.comboId || null,
+        comboName: extras?.combo?.name || null,
+        comboDiscount: extras?.combo?.discount || 0,
       });
     },
     [addItem, mealWindow, mealFilter, kitchens]

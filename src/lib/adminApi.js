@@ -124,6 +124,38 @@ export const adminApi = {
     return adminRequest(`/api/admin/orders?${params.toString()}`);
   },
   chefMenu: (phone) => adminRequest(`/api/admin/chefs/${encodeURIComponent(phone)}/menu`),
+  chefCreateDish: (phone, payload) =>
+    adminRequest(`/api/admin/chefs/${encodeURIComponent(phone)}/menu`, { method: "POST", body: payload }),
+  adminPatchDish: (menuItemId, payload) =>
+    adminRequest(`/api/admin/menu/${encodeURIComponent(menuItemId)}`, { method: "PATCH", body: payload }),
+  adminDeleteDish: (menuItemId) =>
+    adminRequest(`/api/admin/menu/${encodeURIComponent(menuItemId)}`, { method: "DELETE" }),
+  categories: () => adminRequest("/api/admin/categories"),
+  createCategory: (payload) => adminRequest("/api/admin/categories", { method: "POST", body: payload }),
+  patchCategory: (categoryId, payload) =>
+    adminRequest(`/api/admin/categories/${encodeURIComponent(categoryId)}`, { method: "PATCH", body: payload }),
+  deleteCategory: (categoryId, { mode, reassignTo } = {}) => {
+    const params = new URLSearchParams();
+    if (mode) params.set("mode", mode);
+    if (reassignTo) params.set("reassign_to", reassignTo);
+    const suffix = params.toString() ? `?${params}` : "";
+    return adminRequest(`/api/admin/categories/${encodeURIComponent(categoryId)}${suffix}`, { method: "DELETE" });
+  },
+  assignCategory: (categoryId, chefPhones) =>
+    adminRequest(`/api/admin/categories/${encodeURIComponent(categoryId)}/chefs`, {
+      method: "POST",
+      body: { chef_phones: chefPhones },
+    }),
+  unassignCategory: (categoryId, chefPhone, { mode, reassignTo } = {}) => {
+    const params = new URLSearchParams();
+    if (mode) params.set("mode", mode);
+    if (reassignTo) params.set("reassign_to", reassignTo);
+    const suffix = params.toString() ? `?${params}` : "";
+    return adminRequest(
+      `/api/admin/categories/${encodeURIComponent(categoryId)}/chefs/${encodeURIComponent(chefPhone)}${suffix}`,
+      { method: "DELETE" }
+    );
+  },
   chefs: () => adminRequest("/api/admin/chefs"),
   createChef: (payload) => adminRequest("/api/admin/chefs", { method: "POST", body: payload }),
   approveChef: (phone) => adminRequest(`/api/admin/chefs/${encodeURIComponent(phone)}/approve`, { method: "POST" }),
@@ -136,4 +168,21 @@ export const adminApi = {
 
 export function chatsStreamUrl() {
   return `${adminApiBase()}/api/admin/chats/stream`;
+}
+
+export async function adminUploadDishImage(chefPhone, file, menuItemId = null) {
+  const form = new FormData();
+  form.append("file", file);
+  const path = menuItemId
+    ? `/api/admin/chefs/${encodeURIComponent(chefPhone)}/menu/${encodeURIComponent(menuItemId)}/image`
+    : `/api/admin/chefs/${encodeURIComponent(chefPhone)}/menu/image`;
+  const response = await fetch(`${adminApiBase()}${path}`, {
+    method: "POST",
+    credentials: "include",
+    headers: { Accept: "application/json", ...(getAdminToken() ? { Authorization: `Bearer ${getAdminToken()}` } : {}) },
+    body: form,
+  });
+  const data = await parseJsonSafe(response);
+  if (!response.ok) throw new Error(formatApiError(data, response.status));
+  return data;
 }

@@ -54,11 +54,35 @@ export function CartProvider({ children }) {
 
   const deliveryFee = items.length > 0 ? DELIVERY_FEE_DISPLAY : 0;
   const subtotal = items.reduce((sum, item) => sum + (item.lineTotalDisplay || 0), 0);
-  const total = subtotal > 0 ? subtotal + deliveryFee : 0;
+  // A combo discount applies per COMPLETE pair (two distinct dishes, one portion
+  // each) — an incomplete pair earns nothing and blocks checkout with a message.
+  const comboGroups = useMemo(() => {
+    const groups = new Map();
+    for (const item of items) {
+      if (!item.comboId) continue;
+      if (!groups.has(item.comboId)) {
+        groups.set(item.comboId, { comboId: item.comboId, name: item.comboName, discount: item.comboDiscount || 0, lines: [] });
+      }
+      groups.get(item.comboId).lines.push(item);
+    }
+    return [...groups.values()];
+  }, [items]);
+  const comboDiscount = comboGroups.reduce((sum, g) => {
+    const complete = g.lines.length === 2 && g.lines.every((l) => l.quantity === 1) && g.lines[0].menuItemId !== g.lines[1].menuItemId;
+    return sum + (complete ? g.discount : 0);
+  }, 0);
+  const incompleteCombos = comboGroups.filter(
+    (g) => !(g.lines.length === 2 && g.lines.every((l) => l.quantity === 1) && g.lines[0].menuItemId !== g.lines[1].menuItemId)
+  );
+  const total = subtotal > 0 ? subtotal + deliveryFee - comboDiscount : 0;
 
+  // Combo lines (Bhookh Buddies / Pocket Friendly Feast) are their own cart row —
+  // a dish inside a pair never merges with a plain order of the same dish, and the
+  // pair price only lands when the backend validates the two-meal selection.
   const addItem = useCallback((item) => {
     if (!item?.menuItemId || !item?.chefId) return;
-    const quantity = Math.max(1, Number(item.quantity) || 1);
+    const comboId = item.comboId || null;
+    const quantity = comboId ? 1 : Math.max(1, Number(item.quantity) || 1);
     const unit = Number(item.unitPriceDisplay) || 0;
 
     setError(null);
@@ -75,10 +99,15 @@ export function CartProvider({ children }) {
       }
 
       setMealWindowState(item.mealWindow || null);
-      const existing = prev.find((entry) => entry.menuItemId === item.menuItemId);
+      const sameLine = (entry) => entry.menuItemId === item.menuItemId && (entry.comboId || null) === comboId;
+      const existing = prev.find(sameLine);
       if (existing) {
+        if (comboId) {
+          setError(`You already picked ${item.itemName} for this combo — choose a different second dish.`);
+          return prev;
+        }
         return prev.map((entry) => {
-          if (entry.menuItemId !== item.menuItemId) return entry;
+          if (!sameLine(entry)) return entry;
           const nextQty = entry.quantity + quantity;
           return {
             ...entry,
@@ -100,6 +129,9 @@ export function CartProvider({ children }) {
           unitPriceDisplay: unit,
           lineTotalDisplay: unit * quantity,
           customNote: item.customNote || "",
+          comboId,
+          comboName: item.comboName || null,
+          comboDiscount: Number(item.comboDiscount) || 0,
         },
       ];
     });
@@ -121,11 +153,12 @@ export function CartProvider({ children }) {
       return;
     }
     setItems((prev) =>
-      prev.map((item) =>
-        item.menuItemId === menuItemId
-          ? { ...item, quantity: nextQty, lineTotalDisplay: nextQty * item.unitPriceDisplay }
-          : item
-      )
+      prev.map((item) => {
+        if (item.menuItemId !== menuItemId) return item;
+        // Combo meals are exactly one portion each — that's what the pair price validates.
+        const qty = item.comboId ? 1 : nextQty;
+        return { ...item, quantity: qty, lineTotalDisplay: qty * item.unitPriceDisplay };
+      })
     );
   }, [removeItem]);
 
@@ -193,6 +226,16 @@ export function CartProvider({ children }) {
       return;
     }
 
+    if (incompleteCombos.length > 0) {
+      const g = incompleteCombos[0];
+      setError(
+        g.lines.length === 1
+          ? `Your ${g.name || "combo"} pair needs a second dish — pick one more meal or remove the lone item.`
+          : `${g.name || "Combo"} pairs need two different dishes, one portion each.`
+      );
+      return;
+    }
+
     setIsSubmitting(true);
     setError(null);
 
@@ -208,6 +251,7 @@ export function CartProvider({ children }) {
         chef_id: item.chefId,
         quantity: item.quantity,
         customer_note: item.customNote || null,
+        combo_category_id: item.comboId || null,
       })),
     };
     // The cart drawer passes the selected delivery address through — without it
@@ -267,6 +311,7 @@ export function CartProvider({ children }) {
     customerPhone,
     user,
     total,
+    incompleteCombos,
     clearCart,
     closeCart,
   ]);
@@ -297,6 +342,8 @@ export function CartProvider({ children }) {
       mealWindow,
       subtotal,
       deliveryFee,
+      comboDiscount,
+      comboGroups,
       total,
       totalAmount: total,
       customNotes,
@@ -329,6 +376,8 @@ export function CartProvider({ children }) {
       mealWindow,
       subtotal,
       deliveryFee,
+      comboDiscount,
+      comboGroups,
       total,
       customNotes,
       isOpen,

@@ -285,6 +285,8 @@ function CartPanel({ onCollapse }) {
     removeItem,
     subtotal,
     deliveryFee,
+    comboDiscount,
+    comboGroups,
     total,
     error,
     isSubmitting,
@@ -352,11 +354,14 @@ function CartPanel({ onCollapse }) {
         {/* Items */}
         <ul className="divide-y divide-homatri-border/70">
           {items.map((line) => (
-            <li key={line.menuItemId} className="py-2.5 flex items-center gap-3">
+            <li key={`${line.menuItemId}-${line.comboId || "plain"}`} className="py-2.5 flex items-center gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold text-homatri-dark leading-snug">{line.itemName}</p>
                 <p className="text-[11px] text-homatri-muted">
                   ₹{line.unitPriceDisplay} × {line.quantity}
+                  {line.comboId ? (
+                    <span className="ml-1.5 text-[10px] font-bold text-homatri-orange">· {line.comboName} pair</span>
+                  ) : null}
                 </p>
                 {line.customNote ? (
                   <p className="text-[10px] text-homatri-orange">“{line.customNote}”</p>
@@ -399,6 +404,12 @@ function CartPanel({ onCollapse }) {
             <span>Items subtotal</span>
             <span className="font-semibold">₹{Math.round(subtotal)}</span>
           </div>
+          {comboDiscount > 0 ? (
+            <div className="flex justify-between text-xs text-homatri-green">
+              <span>Combo discount {comboGroups.length > 1 ? `(${comboGroups.length} pairs)` : ""}</span>
+              <span className="font-semibold">− ₹{Math.round(comboDiscount)}</span>
+            </div>
+          ) : null}
           <div className="flex justify-between text-xs text-homatri-dark">
             <span>Convenience fee</span>
             <span className="font-semibold">₹{items.length ? Math.round(deliveryFee) : 0}</span>

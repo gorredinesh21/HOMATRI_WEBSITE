@@ -3,6 +3,93 @@
 import { useMemo, useState } from "react";
 import { Instagram, Youtube, ShieldCheck, UtensilsCrossed, X } from "lucide-react";
 import { getActiveMealWindow } from "@/lib/mealWindow";
+import { toBackendMediaUrl } from "@/lib/api";
+
+function ComboPairPicker({ combo, dishes, mealWindow, onOrderItem, chef }) {
+  const [meal1, setMeal1] = useState("");
+  const [meal2, setMeal2] = useState("");
+  const [error, setError] = useState(null);
+
+  if (!combo) return null;
+  const d1 = dishes.find((d) => d.menuItemId === meal1);
+  const d2 = dishes.find((d) => d.menuItemId === meal2);
+  const pairTotal = d1 && d2 ? d1.price + d2.price : 0;
+  const finalPrice = pairTotal ? pairTotal - (combo.comboDiscount || 0) : 0;
+
+  const addPair = () => {
+    if (!d1 || !d2) {
+      setError("Pick both meals first.");
+      return;
+    }
+    if (d1.menuItemId === d2.menuItemId) {
+      setError("Pick two different dishes for the combo price.");
+      return;
+    }
+    setError(null);
+    for (const dish of [d1, d2]) {
+      onOrderItem?.(dish.menuItemId, 1, null, {
+        mealWindow,
+        item: dish,
+        chef,
+        combo: { comboId: combo.categoryId, name: combo.name, discount: combo.comboDiscount },
+      });
+    }
+    setMeal1("");
+    setMeal2("");
+  };
+
+  return (
+    <div className="bg-homatri-orange-light/50 border border-homatri-orange/30 rounded-2xl p-4 space-y-2.5">
+      <div className="flex items-baseline justify-between gap-2">
+        <div>
+          <p className="text-sm font-bold text-homatri-dark">🍱 {combo.name}</p>
+          <p className="text-[11px] text-homatri-muted">
+            {combo.comboServes ? `Serves ${combo.comboServes} · ` : ""}Pick any two dishes — ₹
+            {Math.round(combo.comboDiscount || 0)} off the pair
+          </p>
+        </div>
+        {finalPrice ? (
+          <p className="text-sm font-bold text-homatri-dark shrink-0">
+            <span className="line-through text-homatri-muted font-normal">₹{Math.round(pairTotal)}</span> ₹
+            {Math.round(finalPrice)}
+          </p>
+        ) : null}
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {[
+          { label: "Meal 1", value: meal1, set: setMeal1, exclude: meal2 },
+          { label: "Meal 2", value: meal2, set: setMeal2, exclude: meal1 },
+        ].map(({ label, value, set, exclude }) => (
+          <select
+            key={label}
+            value={value}
+            onChange={(e) => set(e.target.value)}
+            className="w-full border border-homatri-border rounded-xl px-3 py-2 text-xs bg-white"
+            aria-label={label}
+          >
+            <option value="">{label} — choose a dish…</option>
+            {dishes
+              .filter((d) => d.menuItemId !== exclude)
+              .map((d) => (
+                <option key={d.menuItemId} value={d.menuItemId}>
+                  {d.itemName} · ₹{Math.round(d.price)}
+                </option>
+              ))}
+          </select>
+        ))}
+      </div>
+      {error ? <p className="text-[11px] text-red-600">{error}</p> : null}
+      <button
+        type="button"
+        disabled={!d1 || !d2 || d1.menuItemId === d2.menuItemId}
+        onClick={addPair}
+        className="w-full bg-homatri-orange text-white text-xs font-bold py-2.5 rounded-xl disabled:opacity-50"
+      >
+        {finalPrice ? `Add pair — ₹${Math.round(finalPrice)} (save ₹${Math.round(combo.comboDiscount || 0)})` : "Add the pair"}
+      </button>
+    </div>
+  );
+}
 
 export default function ExpandedHingeProfile({ chef, onClose, onOrderItem, onFollow }) {
   // Default to the window that can still be ordered right now (after the 11:30
@@ -19,6 +106,29 @@ export default function ExpandedHingeProfile({ chef, onClose, onOrderItem, onFol
     () => (activeMealWindow === "DINNER" ? chef?.dinnerMenu || [] : chef?.lunchMenu || []),
     [activeMealWindow, chef]
   );
+
+  // Category sections (backend orders dishes by category already — this keeps
+  // the headers stable if the flat list is ever re-sorted).
+  const menuByCategory = useMemo(() => {
+    const groups = [];
+    const index = new Map();
+    for (const item of menu) {
+      const key = item.categoryName || "More dishes";
+      if (!index.has(key)) {
+        const group = { name: key, items: [] };
+        index.set(key, group);
+        groups.push(group);
+      }
+      index.get(key).items.push(item);
+    }
+    return groups;
+  }, [menu]);
+
+  const comboCategories = useMemo(
+    () => (chef?.categories || []).filter((c) => c.pricingType === "PAIR_COMBO"),
+    [chef]
+  );
+  const comboEligible = useMemo(() => menu.filter((i) => i.availability !== "SOLD_OUT"), [menu]);
 
   if (!chef) return null;
 
@@ -163,8 +273,24 @@ export default function ExpandedHingeProfile({ chef, onClose, onOrderItem, onFol
             {menu.length === 0 ? (
               <p className="text-sm text-homatri-muted">No items listed for this meal window.</p>
             ) : (
-              <ul className="divide-y divide-homatri-border/70">
-                {menu.map((item) => {
+              comboCategories.map((combo) => (
+                <ComboPairPicker
+                  key={combo.categoryId}
+                  combo={combo}
+                  dishes={comboEligible}
+                  mealWindow={activeMealWindow}
+                  onOrderItem={onOrderItem}
+                  chef={chef}
+                />
+              ))
+            )}
+            {menu.length === 0 ? null : menuByCategory.map((group) => (
+              <div key={group.name} className="space-y-1">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-homatri-muted pt-2">
+                  {group.name} · {group.items.length}
+                </p>
+                <ul className="divide-y divide-homatri-border/70">
+                {group.items.map((item) => {
                   const qty = selectedQuantities[item.menuItemId] || 0;
                   const soldOut = item.availability === "SOLD_OUT";
                   const isNonVeg = /NON/i.test(String(item.dietaryTag || ""));
@@ -202,7 +328,7 @@ export default function ExpandedHingeProfile({ chef, onClose, onOrderItem, onFol
                         <span className="w-14 h-14 rounded-xl border border-dashed border-homatri-forest/30 bg-homatri-forest-mist flex items-center justify-center overflow-hidden">
                           {item.imageUrl ? (
                             /* eslint-disable-next-line @next/next/no-img-element */
-                            <img src={item.imageUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
+                            <img src={toBackendMediaUrl(item.imageUrl)} alt="" className="w-full h-full object-cover" loading="lazy" />
                           ) : (
                             <UtensilsCrossed className="w-4 h-4 text-homatri-forest/40" />
                           )}
@@ -244,8 +370,9 @@ export default function ExpandedHingeProfile({ chef, onClose, onOrderItem, onFol
                     </li>
                   );
                 })}
-              </ul>
-            )}
+                </ul>
+              </div>
+            ))}
           </section>
         </div>
       </div>

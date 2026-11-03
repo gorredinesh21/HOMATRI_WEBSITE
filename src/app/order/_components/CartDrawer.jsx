@@ -21,6 +21,7 @@ export default function CartDrawer({
     mealWindow,
     setMealWindow,
     subtotal,
+    comboDiscount,
     total,
     customNotes,
     setCustomNotes,
@@ -324,6 +325,12 @@ export default function CartDrawer({
                 <span>Items Subtotal</span>
                 <span className="font-semibold text-homatri-dark">₹{subtotal}</span>
               </div>
+              {comboDiscount > 0 ? (
+              <div className="flex justify-between text-sm text-homatri-green">
+                <span>Combo discount</span>
+                <span className="font-semibold">− ₹{Math.round(comboDiscount)}</span>
+              </div>
+              ) : null}
               <div className="flex justify-between text-xs text-homatri-muted">
                 <span>Convenience Fee</span>
                 <span className="font-semibold text-homatri-dark">₹{deliveryFee}</span>

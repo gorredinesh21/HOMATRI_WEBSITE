@@ -12,6 +12,7 @@ import {
   chefPauseKitchen,
   chefSetAccepting,
   chefToggleStock,
+  chefUploadDishImage,
   fetchChefDashboard,
   respondDietaryRequest,
 } from "@/lib/api";
@@ -62,6 +63,7 @@ export function ChefDashboardProvider({ children }) {
     : fallbackWindow;
   const orders = snapshot?.orders || [];
   const menuItems = snapshot?.menuItems || [];
+  const categories = snapshot?.categories || [];
   const reels = snapshot?.reels || [];
   const dietaryRequests = snapshot?.dietaryRequests || [];
   const cook = snapshot?.cook || buildCookSummary(orders, windowInfo.mealWindow);
@@ -114,9 +116,11 @@ export function ChefDashboardProvider({ children }) {
             dish_name: item.itemName,
             description: item.description,
             unit_price: Number(item.unitPrice),
+            category_id: item.categoryId,
             meal_type: item.mealWindow || "LUNCH",
             dietary_tag: item.dietaryTag || "VEG",
             is_available: item.availability !== "SOLD_OUT",
+            image_url: item.imageUrl || null,
             max_availability: Number.isFinite(Number(item.maxAvailability))
               ? Number(item.maxAvailability)
               : 10,
@@ -138,9 +142,11 @@ export function ChefDashboardProvider({ children }) {
               dish_name: item.itemName,
               description: item.description,
               unit_price: Number(item.unitPrice),
+              category_id: item.categoryId,
               meal_type: item.mealWindow || "LUNCH",
               dietary_tag: item.dietaryTag || "VEG",
               is_available: item.availability !== "SOLD_OUT",
+              image_url: item.imageUrl ?? null,
               max_availability: Number.isFinite(Number(item.maxAvailability))
                 ? Number(item.maxAvailability)
                 : 0,
@@ -175,6 +181,10 @@ export function ChefDashboardProvider({ children }) {
   const toggleAvailability = useCallback(
     (menuItemId) => run(() => chefToggleStock(menuItemId, token)),
     [run, token]
+  );
+  const uploadDishImage = useCallback(
+    async (file, menuItemId = null) => chefUploadDishImage(file, token, menuItemId),
+    [token]
   );
   const setKitchen = useCallback(
     (next) =>
@@ -229,10 +239,12 @@ export function ChefDashboardProvider({ children }) {
       markPacked,
       lockBatch,
       menuItems,
+      categories,
       createMenuItem,
       updateMenuItem,
       deleteMenuItem,
       toggleAvailability,
+      uploadDishImage,
       orders,
       rider,
       dietaryRequests,
@@ -259,10 +271,12 @@ export function ChefDashboardProvider({ children }) {
       markPacked,
       lockBatch,
       menuItems,
+      categories,
       createMenuItem,
       updateMenuItem,
       deleteMenuItem,
       toggleAvailability,
+      uploadDishImage,
       orders,
       rider,
       dietaryRequests,
